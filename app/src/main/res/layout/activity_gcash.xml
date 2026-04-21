@@ -66,17 +66,21 @@
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
+                android:layout_height="55dp"
                 android:layout_marginBottom="20dp"
-                android:background="@drawable/bg_rounded_input"
-                android:backgroundTint="@color/white">
+                android:background="@drawable/bg_spinner_outline"
+                >
 
                 <Spinner
                     android:id="@+id/spinnerType"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@android:color/transparent"
-                    android:popupBackground="@color/kanto_card" />
+                    android:popupBackground="@color/kanto_card"
+                    android:overlapAnchor="false"
+
+                    android:paddingStart="16dp"
+                    android:paddingEnd="48dp" />
 
                 <ImageView
                     android:layout_width="20dp"
@@ -89,15 +93,8 @@
                     android:clickable="false"
                     android:focusable="false"
                     android:importantForAccessibility="no"/>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:background="?attr/selectableItemBackground" />
-
             </RelativeLayout>
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -111,16 +108,16 @@
                 android:id="@+id/etGcashNumber"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:background="@drawable/bg_rounded_input"
-                android:backgroundTint="@color/white"
+
+                android:background="@drawable/bg_input_focused"
+
                 android:hint="09xxxxxxxxx"
                 android:inputType="phone"
                 android:maxLength="11"
                 android:paddingHorizontal="16dp"
-                android:textColor="@color/kanto_text_head"
+                android:textColor="@color/black"
                 android:textSize="16sp"
                 android:layout_marginBottom="20dp"/>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -133,13 +130,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="70dp"
-                android:background="@drawable/bg_rounded_input"
+                android:background="@drawable/bg_input_focused"
+
+                android:addStatesFromChildren="true"
+
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="20dp"
-                android:backgroundTint="@color/white"
                 android:layout_marginBottom="20dp">
-
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -150,7 +148,6 @@
 
                 <EditText
                     android:id="@+id/etGcashAmount"
-                    android:backgroundTint="@color/white"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
@@ -162,7 +159,6 @@
                     android:textSize="32sp"
                     android:textStyle="bold" />
             </LinearLayout>
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -191,7 +187,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Calculate and add standard fee"
-                        android:textColor="#94A3B8"
+                        android:textColor="@color/kanto_text_head"
                         android:textSize="12sp" />
                 </LinearLayout>
 
@@ -200,8 +196,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    app:thumbTint="@color/kanto_primary"
-                    app:trackTint="#A7F3D0" />
+                    app:thumbTint="@color/selector_switch_thumb"
+                    app:trackTint="@color/selector_switch_track" />
             </LinearLayout>
 
             <LinearLayout
