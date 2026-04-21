@@ -45,7 +45,7 @@ public class LoginActivity extends AppCompatActivity {
         btnBiometric = findViewById(R.id.btnBiometric);
 
         // Load Users
-        passwords.put("Fourt", "021413"); adminRoles.put("Fourt", false);
+        passwords.put("Fourt", "020813"); adminRoles.put("Fourt", false);
         passwords.put("Euni", "110814");  adminRoles.put("Euni", false);
         passwords.put("Edna", "030979");  adminRoles.put("Edna", true);
         passwords.put("Frank", "120487"); adminRoles.put("Frank", true);
