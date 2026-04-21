@@ -18,6 +18,7 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     // The communications bridge back to MainActivity
     public interface CartUpdateListener {
         void onCartUpdated();
+        int getMaxStock(String barcode);
     }
 
     public CartAdapter(ArrayList<Product> cart, CartUpdateListener listener) {
@@ -65,6 +66,16 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
 
         holder.btnPlus.setOnClickListener(v -> {
             int currentQty = currentItem.getCurrentQuantity();
+            String barcode = currentItem.getBarcode();
+
+            // Ping MainActivity to get the absolute truth about the stock
+            int maxStock = listener.getMaxStock(barcode);
+
+            if (currentQty >= maxStock) {
+                android.widget.Toast.makeText(v.getContext(), "Max stock reached! Only " + maxStock + " available.", android.widget.Toast.LENGTH_SHORT).show();
+                return; // The Bouncer stops the transaction here
+            }
+
             currentItem.setCurrentQuantity(currentQty + 1);
             notifyItemChanged(holder.getAdapterPosition()); // Redraws just this card
             listener.onCartUpdated(); // Tells MainActivity to recalculate the Grand Total

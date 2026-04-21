@@ -44,6 +44,15 @@ public class UtangActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_utang);
 
+        // TELEPORT BACK TO POS CHECKOUT
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                startActivity(new Intent(UtangActivity.this, MainActivity.class));
+                finish();
+            }
+        });
+
         getWindow().setStatusBarColor(getResources().getColor(R.color.kanto_primary));
 
         dbHelper = new DatabaseHelper(this);
@@ -265,8 +274,7 @@ public class UtangActivity extends AppCompatActivity {
             // Trojan Horse Math
             double remainingBalance = currentBalance - paymentAmount;
 
-            Product dummyPayment = new Product(0, 1, 0.0, paymentAmount, "UTANG_PAYMENT",
-                    "Settled Cash: ₱" + String.format("%.2f", paymentAmount) + " out of ₱" + String.format("%.2f", currentBalance));
+            Product dummyPayment = new Product(0, 1, 0.0, paymentAmount, "UTANG_PAYMENT", "Payment from " + targetNeighbor, "Utang");
 
             ArrayList<Product> paymentDetails = new ArrayList<>();
             paymentDetails.add(dummyPayment);

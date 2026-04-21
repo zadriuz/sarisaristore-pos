@@ -37,6 +37,16 @@ public class HistoryActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_history);
+
+        // TELEPORT BACK TO POS CHECKOUT
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                startActivity(new Intent(HistoryActivity.this, MainActivity.class));
+                finish();
+            }
+        });
+
         getWindow().setStatusBarColor(getResources().getColor(R.color.kanto_primary));
 
         dbHelper = new DatabaseHelper(this);
@@ -82,10 +92,28 @@ public class HistoryActivity extends AppCompatActivity {
         spinnerAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
         spinnerDateFilter.setAdapter(spinnerAdapter);
 
+        // --- WIRE THE CATEGORY SPINNER ---
+        Spinner spinnerHistoryCategory = findViewById(R.id.spinnerHistoryCategory);
+        String[] categoryOptions = {"All", "GCash", "Tindahan", "Softdrinks", "Print", "Utang"};
+
+        ArrayAdapter<String> catAdapter = new ArrayAdapter<>(this, R.layout.item_spinner_selected, categoryOptions);
+        catAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        spinnerHistoryCategory.setAdapter(catAdapter);
+
+        spinnerHistoryCategory.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                // THE TRIGGER: Re-run the master filter whenever the category changes!
+                applyMasterFilter();
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
         spinnerDateFilter.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                applyDateFilter(position);
+                applyMasterFilter();
             }
 
             @Override
@@ -112,8 +140,14 @@ public class HistoryActivity extends AppCompatActivity {
 
                 if (paymentMethod.contains("Utang")) {
                     receiptMessage.append("Charge To: ").append(paymentMethod).append("\n-------------------\n");
-                } else if (purseType.contains("Utang Payment")) {
-                    receiptMessage.append("Payment From: ").append(purseType).append("\n-------------------\n");
+                } else if (purseType.contains("Utang Payment") || paymentMethod.contains("Remitted")) {
+                    // THE DYNAMIC MATH ENGINE
+                    double amountPaid = clickedRecord.getTotalAmount();
+                    double remainingBal = clickedRecord.getChangeAmount();
+                    double originalDebt = amountPaid + remainingBal;
+
+                    receiptMessage.append(String.format("Paid ₱%.2f out of ₱%.2f", amountPaid, originalDebt))
+                            .append("\n-------------------\n");
                 }
 
                 for(String item : itemList){
@@ -163,18 +197,27 @@ public class HistoryActivity extends AppCompatActivity {
             masterRecords.addAll(historyList);
 
             // Force it to filter for "Today" as soon as the data arrives!
-            applyDateFilter(spinnerDateFilter.getSelectedItemPosition());
+            applyMasterFilter();
         });
     }
 
     // --- THE TIME MACHINE ENGINE ---
-    private void applyDateFilter(int filterIndex) {
+    // --- THE DUAL MASTER FILTER ENGINE ---
+    private void applyMasterFilter() {
         allRecords.clear();
         double grandTotal = 0.0;
 
+        // 1. Get current spinner selections
+        int dateIndex = spinnerDateFilter.getSelectedItemPosition();
+        String selectedCategory = "All";
+        Spinner spinnerCategory = findViewById(R.id.spinnerHistoryCategory);
+        if (spinnerCategory != null && spinnerCategory.getSelectedItem() != null) {
+            selectedCategory = spinnerCategory.getSelectedItem().toString();
+        }
+
+        // 2. Set up the Time Machine
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
         java.util.Calendar cal = java.util.Calendar.getInstance();
-
         String todayStr = sdf.format(cal.getTime());
 
         cal.add(java.util.Calendar.DAY_OF_YEAR, -1);
@@ -184,33 +227,58 @@ public class HistoryActivity extends AppCompatActivity {
         cal.add(java.util.Calendar.DAY_OF_YEAR, -7);
         java.util.Date sevenDaysAgo = cal.getTime();
 
+        // 3. Scan the Database
         for (TransactionRecord record : masterRecords) {
+            // -- DATE CHECK --
             String fullDate = record.getTransactionDate();
             if (fullDate == null) continue;
             String justDate = fullDate.length() >= 10 ? fullDate.substring(0, 10) : fullDate;
 
-            boolean match = false;
-            if (filterIndex == 0) { // Today
-                match = justDate.equals(todayStr);
-                tvSalesLabel.setText("TOTAL SALES TODAY");
-            } else if (filterIndex == 1) { // Yesterday
-                match = justDate.equals(yesterdayStr);
-                tvSalesLabel.setText("TOTAL SALES YESTERDAY");
-            } else if (filterIndex == 2) { // Last 7 Days
+            boolean dateMatch = false;
+            if (dateIndex == 0) { // Today
+                dateMatch = justDate.equals(todayStr);
+                tvSalesLabel.setText("SALES: TODAY");
+            } else if (dateIndex == 1) { // Yesterday
+                dateMatch = justDate.equals(yesterdayStr);
+                tvSalesLabel.setText("SALES: YESTERDAY");
+            } else if (dateIndex == 2) { // Last 7 Days
                 try {
                     java.util.Date recordDate = sdf.parse(justDate);
-                    if (recordDate != null && !recordDate.before(sevenDaysAgo)) match = true;
+                    if (recordDate != null && !recordDate.before(sevenDaysAgo)) dateMatch = true;
                 } catch (Exception e) { e.printStackTrace(); }
-                tvSalesLabel.setText("SALES (LAST 7 DAYS)");
-            } else if (filterIndex == 3) { // All Time
-                match = true;
-                tvSalesLabel.setText("ALL TIME SALES");
+                tvSalesLabel.setText("SALES: LAST 7 DAYS");
+            } else if (dateIndex == 3) { // All Time
+                dateMatch = true;
+                tvSalesLabel.setText("SALES: ALL TIME");
             }
 
-            if (match) {
+            // -- CATEGORY CHECK --
+            boolean categoryMatch = false;
+            String recordType = record.getPurseType() != null ? record.getPurseType() : "Unknown";
+            String payMethod = record.getPaymentMethod() != null ? record.getPaymentMethod() : "Unknown";
+
+            if (selectedCategory.equals("All")) {
+                categoryMatch = true;
+            } else if (selectedCategory.equals("Utang")) {
+                // SPECIAL RULE: If they select Utang, search the Payment Method instead of the Purse!
+                if (payMethod.contains("Utang")) {
+                    categoryMatch = true;
+                }
+            } else {
+                // Standard check for Tindahan, Softdrinks, Print, GCash
+                if (recordType.contains(selectedCategory) || record.getTransactionId().contains(selectedCategory.toUpperCase())) {
+                    categoryMatch = true;
+                }
+            }
+
+            // -- FINAL APPROVAL --
+            if (dateMatch && categoryMatch) {
                 allRecords.add(record);
-                String method = record.getPaymentMethod() != null ? record.getPaymentMethod() : "";
-                if (!method.contains("Utang")) {
+
+                // CRITICAL MATH FIX:
+                // Only hide Utang from the grand total IF they are looking at Cash Sales.
+                // If they specifically filter by "Utang", show them the total Utang issued!
+                if (!payMethod.contains("Utang") || selectedCategory.equals("Utang")) {
                     grandTotal += record.getTotalAmount();
                 }
             }

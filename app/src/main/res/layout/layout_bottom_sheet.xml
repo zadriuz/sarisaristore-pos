@@ -31,6 +31,7 @@
         android:layout_marginBottom="12dp"
         android:background="@drawable/bg_rounded_button"
         android:text="Transaction History"
+        app:iconTint="@color/kanto_primary"
         app:icon="@drawable/ic_receipt"
         app:iconGravity="textStart"
         android:textColor="@color/kanto_text_head"
@@ -43,6 +44,7 @@
         android:layout_marginBottom="12dp"
         android:background="@drawable/bg_rounded_button"
         android:text="Manage Debts"
+        app:iconTint="@color/kanto_primary"
         app:icon="@drawable/ic_debt"
         app:iconGravity="textStart"
         android:textColor="@color/kanto_text_head"
@@ -55,6 +57,7 @@
         android:layout_marginBottom="12dp"
         android:background="@drawable/bg_rounded_button"
         android:text="Manage Inventory"
+        app:iconTint="@color/kanto_primary"
         app:icon="@drawable/ic_inventory"
         app:iconGravity="textStart"
         android:textColor="@color/kanto_text_head"
@@ -67,22 +70,24 @@
         android:layout_marginBottom="12dp"
         android:background="@drawable/bg_rounded_button"
         android:text="GCash Services"
+        app:iconTint="@color/white"
         app:icon="@drawable/ic_gcash"
         app:iconGravity="textStart"
         android:textColor="@color/white"
-        app:backgroundTint="#005DFF" />
+        app:backgroundTint="#007bff" />
 
     <Button
-    android:id="@+id/btnMenuAdmin"
-    android:layout_width="match_parent"
-    android:layout_height="55dp"
-    android:layout_marginBottom="24dp"
-    android:background="@drawable/bg_rounded_button"
-    android:text="Admin Dashboard"
+        android:id="@+id/btnMenuAdmin"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/bg_rounded_button"
+        android:text="Admin Dashboard"
+        app:iconTint="@color/white"
         app:icon="@drawable/ic_dashboard"
         app:iconGravity="textStart"
-    android:textColor="@color/white"
-    app:backgroundTint="@color/kanto_primary" />
+        android:textColor="@color/white"
+        app:backgroundTint="@color/kanto_primary" />
 
     <Button
         android:id="@+id/btnMenuCheckout"
@@ -91,6 +96,7 @@
         android:layout_marginBottom="12dp"
         android:background="@drawable/bg_rounded_button"
         android:text="POS / Checkout"
+        app:iconTint="@color/kanto_primary"
         app:icon="@drawable/ic_pos"
         app:iconGravity="textStart"
         android:textColor="@color/kanto_text_head"

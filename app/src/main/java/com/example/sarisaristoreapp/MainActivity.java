@@ -54,15 +54,13 @@ public class MainActivity extends AppCompatActivity {
     EditText etBarcode, etQty, etCashRendered;
     Spinner spinnerPurse;
     TextView tvTotal, tvChange;
-    ImageButton btnLogout;
     ImageView btnMenu; // Declaration ONLY - fixes the crash
-    Button btnGCash;
     Button btnMenuCheckout;
 
 
     DatabaseHelper dbHelper;
-    ArrayList<Product> checkoutCart = new ArrayList<>();
-    public double cartTotal = 0.0;
+    public static ArrayList<Product> checkoutCart = new ArrayList<>();
+    public static double cartTotal = 0.0;
     RecyclerView listCart;
     CartAdapter cartAdapter;
     String scannedCode;
@@ -79,8 +77,31 @@ public class MainActivity extends AppCompatActivity {
                     scannedCode = result.getContents();
                     if(globalInventory.containsKey(scannedCode)){
                         Product foundProduct = globalInventory.get(scannedCode);
-                        Product receiptItem = new Product(0, 1, foundProduct.getCostPrice(), foundProduct.getSellingPrice(), scannedCode, foundProduct.getProductName());
-                        checkoutCart.add(receiptItem);
+
+                        // --- THE CUMULATIVE SCANNER CHECK ---
+                        int currentCartQty = 0;
+                        Product existingCartItem = null;
+
+                        for (Product p : checkoutCart) {
+                            if (p.getBarcode().equals(scannedCode)) {
+                                existingCartItem = p;
+                                currentCartQty = p.getCurrentQuantity();
+                                break;
+                            }
+                        }
+
+                        if (currentCartQty + 1 > foundProduct.getCurrentQuantity()) {
+                            Toast.makeText(MainActivity.this, "Max stock reached!", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        if (existingCartItem != null) {
+                            existingCartItem.setCurrentQuantity(currentCartQty + 1);
+                        } else {
+                            Product receiptItem = new Product(0, 1, foundProduct.getCostPrice(), foundProduct.getSellingPrice(), scannedCode, foundProduct.getProductName(), foundProduct.getCategory());
+                            checkoutCart.add(receiptItem);
+                        }
+
                         cartAdapter.notifyDataSetChanged();
                         recalculateGrandTotal();
                     }else{
@@ -94,6 +115,44 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         // EdgeToEdge removed to fix UI overlap bugs
         setContentView(R.layout.activity_main);
+
+        // THE DOUBLE-TAP BACK BUTTON TRAPDOOR
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (backPressedTime + 2000 > System.currentTimeMillis()) {
+                    // SECOND TAP: Summon the custom dialog!
+                    android.app.Dialog customDialog = new android.app.Dialog(MainActivity.this);
+                    customDialog.setContentView(R.layout.layout_alert_dialog);
+
+                    if (customDialog.getWindow() != null) {
+                        customDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                    }
+
+                    android.widget.TextView tvTitle = customDialog.findViewById(R.id.tvAlertTitle);
+                    android.widget.TextView tvMessage = customDialog.findViewById(R.id.tvAlertMessage);
+                    android.widget.Button btnCancel = customDialog.findViewById(R.id.btnAlertCancel);
+                    android.widget.Button btnConfirm = customDialog.findViewById(R.id.btnAlertConfirm);
+
+                    tvTitle.setText("Log Out?");
+                    tvMessage.setText("Are you sure you want to log out?");
+                    btnConfirm.setText("Log Out");
+
+                    btnCancel.setOnClickListener(view -> customDialog.dismiss());
+
+                    btnConfirm.setOnClickListener(view -> {
+                        customDialog.dismiss();
+                        performLogout(); // Triggers your actual logout sequence!
+                    });
+
+                    customDialog.show();
+                } else {
+                    // FIRST TAP: Show the warning toast
+                    Toast.makeText(getBaseContext(), "Press back again to log out", Toast.LENGTH_SHORT).show();
+                }
+                backPressedTime = System.currentTimeMillis();
+            }
+        });
 
         SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
         activeCashier = prefs.getString("ActiveUser", "Unknown");
@@ -135,9 +194,8 @@ public class MainActivity extends AppCompatActivity {
         btnCheckout = findViewById(R.id.btnCheckout);
         etCashRendered = findViewById(R.id.etCashRendered);
         tvChange = findViewById(R.id.tvChange);
-        btnLogout = findViewById(R.id.btnLogout);
+
         btnMenu = findViewById(R.id.btnMenu); // Properly initialized after setContentView
-        btnGCash = findViewById(R.id.btnGcashService);
 
         AutoCompleteTextView etSmartSearch = findViewById(R.id.etBarcode);
         searchAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, searchList);
@@ -153,53 +211,21 @@ public class MainActivity extends AppCompatActivity {
             public void onCartUpdated() {
                 recalculateGrandTotal();
             }
+
+            @Override
+            public int getMaxStock(String barcode) {
+                // Return the real-time stock directly from the Master Inventory
+                if (globalInventory.containsKey(barcode)) {
+                    return globalInventory.get(barcode).getCurrentQuantity();
+                }
+                return 0; // Failsafe if the item somehow doesn't exist
+            }
         });
         listCart.setAdapter(cartAdapter);
 
-        // The Universal Logout Trapdoor
-        btnLogout.setOnClickListener(v -> {
-            android.app.Dialog customDialog = new android.app.Dialog(this);
-            // WE REUSE THE TEMPLATE!
-            customDialog.setContentView(R.layout.layout_alert_dialog);
-
-            if (customDialog.getWindow() != null) {
-                customDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-            }
-
-            android.widget.TextView tvTitle = customDialog.findViewById(R.id.tvAlertTitle);
-            android.widget.TextView tvMessage = customDialog.findViewById(R.id.tvAlertMessage);
-            android.widget.Button btnCancel = customDialog.findViewById(R.id.btnAlertCancel);
-            android.widget.Button btnConfirm = customDialog.findViewById(R.id.btnAlertConfirm);
-
-            // Dynamically inject the Logout text!
-            tvTitle.setText("Confirm Logout");
-            tvMessage.setText("Are you sure you want to log out of the Admin Dashboard?");
-            btnConfirm.setText("Log Out");
-
-            btnCancel.setOnClickListener(view -> customDialog.dismiss());
-
-            btnConfirm.setOnClickListener(view -> {
-                android.widget.Toast.makeText(this, "Logged out successfully.", android.widget.Toast.LENGTH_SHORT).show();
-
-                // Clear the Admin Session
-                android.content.SharedPreferences prefs2 = getSharedPreferences("StoreSession", MODE_PRIVATE);
-                prefs2.edit().putBoolean("IsAdmin", false).apply();
-
-                customDialog.dismiss();
-
-                // Send them back to the Login Screen and kill the Dashboard
-                android.content.Intent intent = new android.content.Intent(this, LoginActivity.class);
-                startActivity(intent);
-                finishAffinity();
-            });
-
-            customDialog.show();
-        });
-
-        // --- DASHBOARD GCASH BUTTON ---
-        btnGCash.setOnClickListener(v -> {
-            startActivity(new Intent(MainActivity.this, GCashActivity.class));
-        });
+        // WAKE UP THE STATIC CART UI
+        recalculateGrandTotal();
+        cartAdapter.notifyDataSetChanged();
 
         // WAKE UP THE SECURE MENU
         btnMenu.setOnClickListener(v -> showAdminMenu());
@@ -255,19 +281,41 @@ public class MainActivity extends AppCompatActivity {
                 Product foundProduct = globalInventory.get(targetBarcode);
                 int parsedQty = Integer.parseInt(scannedQty);
 
-                if(parsedQty > foundProduct.getCurrentQuantity()){
-                    Toast.makeText(MainActivity.this, "Not enough stock! Only " + foundProduct.getCurrentQuantity() + " left.", Toast.LENGTH_SHORT).show();
+                // --- THE ZERO/NEGATIVE BOUNCER ---
+                if (parsedQty <= 0) {
+                    Toast.makeText(MainActivity.this, "Quantity must be at least 1!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                double realPrice = foundProduct.getSellingPrice();
-                double subTotal = realPrice * parsedQty;
+                // --- THE CUMULATIVE STOCK CHECKER ---
+                int currentCartQty = 0;
+                Product existingCartItem = null;
 
-                Product receiptItem = new Product(0, parsedQty, foundProduct.getCostPrice(), realPrice, targetBarcode, foundProduct.getProductName());
+                // 1. Scan the cart to see if this item is already in there
+                for (Product p : checkoutCart) {
+                    if (p.getBarcode().equals(foundProduct.getBarcode())) {
+                        existingCartItem = p;
+                        currentCartQty = p.getCurrentQuantity();
+                        break;
+                    }
+                }
 
-                checkoutCart.add(receiptItem);
+                // 2. Add the cart quantity + the new quantity, and check the absolute limit
+                if (currentCartQty + parsedQty > foundProduct.getCurrentQuantity()) {
+                    int remainingAllowed = foundProduct.getCurrentQuantity() - currentCartQty;
+                    Toast.makeText(MainActivity.this, "Not enough stock! You can only add " + remainingAllowed + " more.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // 3. Group the items or add a new row!
+                if (existingCartItem != null) {
+                    existingCartItem.setCurrentQuantity(currentCartQty + parsedQty);
+                } else {
+                    Product receiptItem = new Product(0, parsedQty, foundProduct.getCostPrice(), foundProduct.getSellingPrice(), foundProduct.getBarcode(), foundProduct.getProductName(), foundProduct.getCategory());
+                    checkoutCart.add(receiptItem);
+                }
+
                 recalculateGrandTotal();
-
                 cartAdapter.notifyDataSetChanged();
 
                 etBarcode.setText("");
@@ -392,8 +440,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        // KILL THE TIMER WHEN APP IS IN BACKGROUND
+        idleHandler.removeCallbacks(idleRunnable);
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
+        // RESTART THE TIMER WHEN APP IS OPENED
+        idleHandler.removeCallbacks(idleRunnable);
+        idleHandler.postDelayed(idleRunnable, 15 * 60 * 1000);
+
         dbHelper.getAllProducts(currentInventory -> {
             globalInventory = currentInventory;
             searchList.clear();
@@ -414,6 +473,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void performLogout() {
+        wipeCartClean();
+
         android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
         prefs.edit().clear().apply();
         Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
@@ -422,17 +483,6 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
-    @Override
-    public void onBackPressed() {
-        if (backPressedTime + 2000 > System.currentTimeMillis()) {
-            super.onBackPressed();
-            performLogout();
-            return;
-        } else {
-            Toast.makeText(getBaseContext(), "Press back again to quit and log out", Toast.LENGTH_SHORT).show();
-        }
-        backPressedTime = System.currentTimeMillis();
-    }
 
     private void recalculateGrandTotal() {
         cartTotal = 0.0;

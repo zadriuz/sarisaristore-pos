@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,12 +31,22 @@ public class InventoryAdapter extends RecyclerView.Adapter<InventoryAdapter.Inve
         Product currentItem = productList.get(position);
 
         holder.tvName.setText(currentItem.getProductName());
-        holder.tvBarcode.setText("BARCODE: " + currentItem.getBarcode());
         holder.tvPrice.setText(String.format("₱%.2f", currentItem.getSellingPrice()));
 
-        int stock = currentItem.getCurrentQuantity();
+        // --- SAFE CATEGORY DISPLAY ENGINE (This replaces the old barcode line!) ---
+        String cat = currentItem.getCategory();
+        if (cat == null || cat.trim().isEmpty()) {
+            holder.tvCategory.setText("UNCATEGORIZED");
+            holder.tvCategory.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FECACA"))); // Light Red
+            holder.tvCategory.setTextColor(android.graphics.Color.parseColor("#B91C1C"));
+        } else {
+            holder.tvCategory.setText(cat.toUpperCase());
+            holder.tvCategory.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#E2E8F0"))); // Default Gray
+            holder.tvCategory.setTextColor(android.graphics.Color.parseColor("#475569"));
+        }
+        // --------------------------------------------------------------------------
 
-        // --- LOW STOCK ALERT ENGINE ---
+        int stock = currentItem.getCurrentQuantity();
         if (stock <= 5) {
             // Force Pale Red (#DC2626) for both stock AND price!
             holder.tvStock.setTextColor(android.graphics.Color.parseColor("#DC2626"));
@@ -68,12 +79,31 @@ public class InventoryAdapter extends RecyclerView.Adapter<InventoryAdapter.Inve
             android.widget.Button btnDelete = sheetView.findViewById(R.id.btnEditDelete);
             android.widget.Button btnSave = sheetView.findViewById(R.id.btnEditSave);
 
+            Spinner spinnerCat = sheetView.findViewById(R.id.spinnerCategory);
+            String[] categories = {"Tindahan", "Softdrinks", "Print"};
+
+            // 1. Use your custom SLIM layout for the closed box
+            android.widget.ArrayAdapter<String> catAdapter = new android.widget.ArrayAdapter<>(v.getContext(), R.layout.item_spinner_selected, categories);
+
+            // 2. Use your custom FAT layout for the dropdown list
+            catAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
+
+            spinnerCat.setAdapter(catAdapter);
+
             // Pre-fill existing data!
             etBarcode.setText(currentItem.getBarcode());
             etName.setText(currentItem.getProductName());
             etCost.setText(String.valueOf(currentItem.getCostPrice()));
             etSell.setText(String.valueOf(currentItem.getSellingPrice()));
             etQty.setText(String.valueOf(currentItem.getCurrentQuantity()));
+
+            // THE FIX: Pre-select the correct category in the dropdown!
+            if (currentItem.getCategory() != null) {
+                int spinnerPosition = catAdapter.getPosition(currentItem.getCategory());
+                if (spinnerPosition >= 0) {
+                    spinnerCat.setSelection(spinnerPosition);
+                }
+            }
 
             // Wire the Scanner Hook!
             btnScan.setOnClickListener(v1 -> {
@@ -137,6 +167,14 @@ public class InventoryAdapter extends RecyclerView.Adapter<InventoryAdapter.Inve
                 // but for now, updating the fields works for basic edits.
                 currentItem.setBarcode(newBarcode);
 
+                String selectedCategory = spinnerCat.getSelectedItem().toString();
+
+                // If updating an existing item:
+                currentItem.setCategory(selectedCategory);
+
+                // OR if making a new item, pass it to your constructor:
+                // Product newProduct = new Product(..., selectedCategory);
+
                 DatabaseHelper db = new DatabaseHelper(v.getContext());
                 db.addProduct(currentItem);
 
@@ -163,16 +201,16 @@ public class InventoryAdapter extends RecyclerView.Adapter<InventoryAdapter.Inve
 
     // THE PROPERLY STRUCTURED VIEWHOLDER
     public static class InventoryViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvPrice, tvStock, tvBarcode;
-        ImageView btnEdit; // SAFELY TUCKED INSIDE!
+        TextView tvName, tvPrice, tvStock, tvCategory; // Changed this!
+        ImageView btnEdit;
 
         public InventoryViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvCardName);
-            tvBarcode = itemView.findViewById(R.id.tvCardBarcode);
+            tvCategory = itemView.findViewById(R.id.tvCardCategory); // Changed this!
             tvPrice = itemView.findViewById(R.id.tvCardPrice);
             tvStock = itemView.findViewById(R.id.tvCardStock);
-            btnEdit = itemView.findViewById(R.id.btnEditItem); // LINKED PERFECTLY!
+            btnEdit = itemView.findViewById(R.id.btnEditItem);
         }
     }
 }

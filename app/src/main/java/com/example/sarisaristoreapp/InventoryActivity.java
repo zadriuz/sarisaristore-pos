@@ -8,6 +8,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -55,6 +56,16 @@ public class InventoryActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_inventory);
+
+        // TELEPORT BACK TO POS CHECKOUT
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                startActivity(new Intent(InventoryActivity.this, MainActivity.class));
+                finish();
+            }
+        });
+
         getWindow().setStatusBarColor(getResources().getColor(R.color.kanto_primary));
 
         dbHelper = new DatabaseHelper(this);
@@ -113,6 +124,7 @@ public class InventoryActivity extends AppCompatActivity {
         });
 
         // --- 1. THE SEARCH ENGINE ---
+        // --- 1. THE SEARCH ENGINE ---
         EditText etSearch = findViewById(R.id.etSearchInventory);
         etSearch.addTextChangedListener(new android.text.TextWatcher() {
             @Override
@@ -121,19 +133,8 @@ public class InventoryActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override
             public void afterTextChanged(android.text.Editable s) {
-                String query = s.toString().toLowerCase();
-                ArrayList<Product> filteredList = new ArrayList<>();
-                for (Product item : inventoryList) {
-                    // 1. Safely grab the strings. If they are null, treat them as empty ("")!
-                    String safeName = item.getProductName() != null ? item.getProductName().toLowerCase() : "";
-                    String safeBar = item.getBarcode() != null ? item.getBarcode().toLowerCase() : "";
-
-                    // 2. Perform the search on the safe strings
-                    if (safeName.contains(query) || safeBar.contains(query)) {
-                        filteredList.add(item);
-                    }
-                }
-                inventoryAdapter.filterList(filteredList);
+                // THE FIX: Trigger the master engine!
+                applyCurrentFilters();
             }
         });
 
@@ -141,6 +142,14 @@ public class InventoryActivity extends AppCompatActivity {
         ImageView btnMenu = findViewById(R.id.btnMenu);
         // WAKE UP THE SECURE MENU
         btnMenu.setOnClickListener(v -> showAdminMenu());
+
+        // --- 4. THE CATEGORY FILTER ENGINE ---
+        // --- 4. THE CATEGORY FILTER ENGINE ---
+        android.widget.RadioGroup radioGroupCategory = findViewById(R.id.radioGroupCategory);
+        radioGroupCategory.setOnCheckedChangeListener((group, checkedId) -> {
+            // THE FIX: Trigger the master engine!
+            applyCurrentFilters();
+        });
 
         // --- 3. THE ADD ITEM BUTTON ---
         // --- 3. THE ADD ITEM BUTTON ---
@@ -156,6 +165,17 @@ public class InventoryActivity extends AppCompatActivity {
             EditText etSheetSell = sheetView.findViewById(R.id.etSheetSell);
             EditText etSheetQty = sheetView.findViewById(R.id.etSheetQty);
             Button btnSheetSave = sheetView.findViewById(R.id.btnSheetSave);
+
+            Spinner spinnerCat = sheetView.findViewById(R.id.spinnerCategory);
+            String[] categories = {"Tindahan", "Softdrinks", "Print"};
+
+            // 1. Use your custom SLIM layout for the closed box
+            android.widget.ArrayAdapter<String> catAdapter = new android.widget.ArrayAdapter<>(this, R.layout.item_spinner_selected, categories);
+
+            // 2. Use your custom FAT layout for the dropdown list
+            catAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
+
+            spinnerCat.setAdapter(catAdapter);
 
             // Tell the scanner where to put the barcode when it returns!
             currentBarcodeTarget = etSheetBarcode;
@@ -188,7 +208,11 @@ public class InventoryActivity extends AppCompatActivity {
                 double sell = Double.parseDouble(sellStr);
                 int qty = Integer.parseInt(qtyStr);
 
-                Product newProduct = new Product(0, qty, cost, sell, bar, name);
+                // Grab the category from the spinner
+                String selectedCategory = spinnerCat.getSelectedItem().toString();
+
+// Pass it as the 7th argument!
+                Product newProduct = new Product(0, qty, cost, sell, bar, name, selectedCategory);
 
                 if(dbHelper.addProduct(newProduct)){
                     Toast.makeText(InventoryActivity.this, "Product Saved!", Toast.LENGTH_SHORT).show();
@@ -225,7 +249,8 @@ public class InventoryActivity extends AppCompatActivity {
                     }
                 }
 
-                inventoryAdapter.notifyDataSetChanged();
+                // THE FIX: Trigger the master engine instead of manually updating the adapter!
+                applyCurrentFilters();
             }
         });
     }
@@ -282,5 +307,40 @@ public class InventoryActivity extends AppCompatActivity {
         behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
 
         dialog.show();
+    }
+
+    // --- THE MASTER FILTER ENGINE ---
+    private void applyCurrentFilters() {
+        // 1. Grab current search text
+        android.widget.EditText etSearch = findViewById(R.id.etSearchInventory);
+        String query = etSearch.getText().toString().toLowerCase().trim();
+
+        // 2. Grab current selected category
+        android.widget.RadioGroup radioGroupCategory = findViewById(R.id.radioGroupCategory);
+        int checkedId = radioGroupCategory.getCheckedRadioButtonId();
+        String selectedCategory = "All";
+        if (checkedId == R.id.radioTindahan) selectedCategory = "Tindahan";
+        else if (checkedId == R.id.radioSoftdrinks) selectedCategory = "Softdrinks";
+        else if (checkedId == R.id.radioPrint) selectedCategory = "Print";
+
+        // 3. Filter the master list!
+        ArrayList<Product> filteredList = new ArrayList<>();
+        for (Product item : inventoryList) {
+            // Check Category
+            boolean matchesCategory = selectedCategory.equals("All") ||
+                    (item.getCategory() != null && item.getCategory().equals(selectedCategory));
+
+            // Check Search
+            String safeName = item.getProductName() != null ? item.getProductName().toLowerCase() : "";
+            String safeBar = item.getBarcode() != null ? item.getBarcode().toLowerCase() : "";
+            boolean matchesSearch = query.isEmpty() || safeName.contains(query) || safeBar.contains(query);
+
+            // If it passes BOTH tests, show it!
+            if (matchesCategory && matchesSearch) {
+                filteredList.add(item);
+            }
+        }
+
+        inventoryAdapter.filterList(filteredList);
     }
 }

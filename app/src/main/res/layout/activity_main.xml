@@ -9,6 +9,7 @@
     tools:context=".MainActivity">
 
     <LinearLayout
+        android:id="@+id/mainHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/white"
@@ -45,35 +46,11 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/layoutHeader"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:padding="20dp">
-
-        <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:src="@drawable/ic_menu"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:id="@+id/btnMenu"
-            app:tint="@color/kanto_primary" />
-
-        <ImageButton
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:id="@+id/btnLogout"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_logout"
-            app:tint="@color/kanto_primary" />
-    </LinearLayout>
-
-    <LinearLayout
         android:id="@+id/layoutSearch"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/layoutHeader"
+        android:layout_below="@id/mainHeader"
+        android:layout_marginTop="16dp"
         android:orientation="horizontal"
         android:paddingHorizontal="20dp"
         android:layout_marginBottom="12dp">
@@ -83,7 +60,6 @@
             android:layout_width="0dp"
             android:layout_height="50dp"
             android:backgroundTint="@color/white"
-
             android:layout_weight="1"
             android:background="@drawable/bg_rounded_input"
             android:completionThreshold="1"
@@ -99,7 +75,6 @@
             android:id="@+id/etQty"
             android:layout_width="70dp"
             android:layout_height="50dp"
-
             android:layout_marginStart="8dp"
             android:background="@drawable/bg_rounded_input"
             android:backgroundTint="@color/white"
@@ -145,78 +120,82 @@
         android:background="@drawable/bg_checkout_pod"
         android:elevation="12dp"
         android:orientation="vertical"
-        android:padding="16dp"> <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:baselineAligned="false"
-        android:layout_marginBottom="12dp">
+        android:padding="16dp">
 
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginEnd="8dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Select Purse:"
-                android:textColor="@color/kanto_text_head"
-                android:layout_marginBottom="8dp"
-                android:textStyle="bold"
-                android:textSize="15sp" /> <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_spinner_outline">
-            <Spinner
-                android:id="@+id/spinnerPurse"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@android:color/transparent"
-                android:popupBackground="@color/kanto_card" />
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:layout_marginEnd="8dp"
-                android:src="@drawable/ic_arrow_down"
-                app:tint="@color/kanto_primary"
-                android:importantForAccessibility="no"/>
-        </RelativeLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="8dp">
+            android:orientation="horizontal"
+            android:baselineAligned="false"
+            android:layout_marginBottom="12dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Cash Given:"
-                android:layout_marginBottom="8dp"
-                android:textColor="@color/kanto_text_head"
-                android:textStyle="bold"
-                android:textSize="15sp" />
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="8dp">
 
-            <EditText
-                android:id="@+id/etCashRendered"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_rounded_input"
-                android:hint="₱0.00"
-                android:textColorHint="@color/kanto_neutral"
-                android:inputType="numberDecimal"
-                android:paddingHorizontal="12dp"
-                android:textColor="@color/kanto_text_body"
-                android:textCursorDrawable="@null"/>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Select Purse:"
+                    android:textColor="@color/kanto_text_head"
+                    android:layout_marginBottom="8dp"
+                    android:textStyle="bold"
+                    android:textSize="15sp" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_spinner_outline">
+                    <Spinner
+                        android:id="@+id/spinnerPurse"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@android:color/transparent"
+                        android:popupBackground="@color/white" />
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/ic_arrow_down"
+                        app:tint="@color/kanto_primary"
+                        android:importantForAccessibility="no"/>
+                </RelativeLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="8dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cash Given:"
+                    android:layout_marginBottom="8dp"
+                    android:textColor="@color/kanto_text_head"
+                    android:textStyle="bold"
+                    android:textSize="15sp" />
+
+                <EditText
+                    android:id="@+id/etCashRendered"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:background="@drawable/bg_rounded_input"
+                    android:hint="₱0.00"
+                    android:textColorHint="@color/kanto_neutral"
+                    android:inputType="numberDecimal"
+                    android:paddingHorizontal="12dp"
+                    android:textColor="@color/kanto_text_body"
+                    android:textCursorDrawable="@null"/>
+            </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -314,16 +293,5 @@
         android:layout_marginHorizontal="20dp"
         android:divider="@android:color/transparent"
         android:dividerHeight="8dp" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone">
-        <Button android:id="@+id/btnGoToInventory" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnGoToDashboard" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnGoToUtang" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-        <Button android:id="@+id/btnGcashService" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-    </LinearLayout>
 
 </RelativeLayout>

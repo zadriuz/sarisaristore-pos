@@ -29,6 +29,16 @@ public class DashboardActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
+
+        // TELEPORT BACK TO POS CHECKOUT
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                startActivity(new Intent(DashboardActivity.this, MainActivity.class));
+                finish();
+            }
+        });
+
         getWindow().setStatusBarColor(getResources().getColor(R.color.kanto_primary));
 
         dbHelper = new DatabaseHelper(this);

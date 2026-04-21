@@ -7,18 +7,20 @@ public class Product {
     private double sellingPrice;
     private String barcode;
     private String productName;
+    private String category;
 
     public Product(){
 
     }
 
-    public Product(int productID, int currentQuantity, double costPrice, double sellingPrice, String barcode, String productName){
+    public Product(int productID, int currentQuantity, double costPrice, double sellingPrice, String barcode, String productName, String category){
         this.productID = productID;
         this.currentQuantity = currentQuantity;
         this.costPrice = costPrice;
         this.sellingPrice = sellingPrice;
         this.barcode = barcode;
         this.productName = productName;
+        this.category = category;
     }
 
     public String getProductName(){
@@ -64,6 +66,9 @@ public class Product {
     public int getProductID(){
         return productID;
     }
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 
     public void setProductID(int productID){
         this.productID = productID;

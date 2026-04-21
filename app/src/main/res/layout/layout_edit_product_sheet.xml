@@ -40,6 +40,45 @@
         <EditText android:id="@+id/etEditQty" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_rounded_input" android:backgroundTint="#E8F0E3" android:paddingHorizontal="16dp" android:textColor="@color/kanto_text_head" android:inputType="number" android:textSize="14sp"/>
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:layout_marginBottom="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Item Category"
+            android:textColor="@color/kanto_text_head"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="@drawable/bg_spinner_outline">
+
+            <Spinner
+                android:id="@+id/spinnerCategory"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/transparent"
+                android:popupBackground="@color/white" />
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="12dp"
+                android:src="@drawable/ic_arrow_down"
+                app:tint="@color/kanto_primary"
+                android:importantForAccessibility="no"/>
+        </RelativeLayout>
+    </LinearLayout>
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="24dp" android:layout_marginBottom="24dp">
         <Button android:id="@+id/btnEditDelete" android:layout_width="0dp" android:layout_height="60dp" android:layout_weight="0.8" android:layout_marginEnd="12dp" android:background="@drawable/bg_rounded_button" android:text="Delete" android:textColor="#DC2626" android:textSize="16sp" android:textStyle="bold" app:backgroundTint="#FCE8E6" />
         <Button android:id="@+id/btnEditSave" android:layout_width="0dp" android:layout_height="60dp" android:layout_weight="1.2" android:background="@drawable/bg_rounded_button" android:text="Save Updates" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" app:backgroundTint="@color/kanto_primary" />

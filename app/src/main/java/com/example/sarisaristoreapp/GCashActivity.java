@@ -45,6 +45,16 @@ public class GCashActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_gcash);
+
+        // TELEPORT BACK TO POS CHECKOUT
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                startActivity(new Intent(GCashActivity.this, MainActivity.class));
+                finish();
+            }
+        });
+
         getWindow().setStatusBarColor(getResources().getColor(R.color.kanto_primary));
 
         dbHelper = new DatabaseHelper(this);
@@ -98,6 +108,9 @@ public class GCashActivity extends AppCompatActivity {
         spinnerAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
 
         spinnerType.setAdapter(spinnerAdapter);
+        // Force the spinner to open when the user taps ANYWHERE on the RelativeLayout box
+        findViewById(R.id.spinnerType).getParent().requestDisallowInterceptTouchEvent(false);
+        ((View) spinnerType.getParent()).setOnClickListener(v -> spinnerType.performClick());
 
         // Listeners to update math instantly
         etGcashAmount.addTextChangedListener(new TextWatcher() {
@@ -155,13 +168,16 @@ public class GCashActivity extends AppCompatActivity {
             // Inject the GCash number into the receipt details!
             ArrayList<Product> gcashDetails = new ArrayList<>();
             // We pass it as a fake Product so the SQLite database saves it in the receipt items list
-            Product numberItem = new Product(0, 1, 0.0, finalTotal, "GCASH", "No: " + numberStr + " (Charge: ₱" + calculatedFee + ")");
+            Product numberItem = new Product(0, 1, 0.0, finalTotal, "GCASH", "No: " + numberStr + " (Charge: ₱" + calculatedFee + ")", "GCash");
 
             // Now pass `gcashDetails` instead of `emptyItems` into your save method:
             // PASS THE RIGHT ARRAY!
             dbHelper.saveTransaction("GCash " + type, "GCash", finalTotal, finalTotal, 0.0, deviceName, gcashDetails);
 
             Toast.makeText(this, type + " Successful!", Toast.LENGTH_SHORT).show();
+
+            startActivity(new Intent(this, MainActivity.class));
+
             finish(); // Close activity after success
         });
     }
@@ -181,28 +197,33 @@ public class GCashActivity extends AppCompatActivity {
             return;
         }
 
-        // Calculate the raw fee
-        // --- AUTHENTIC SARI-SARI TIERED LOGIC ---
-        // 1. Calculate how many full thousands there are (₱20 each)
-        int thousands = (int) (baseAmount / 1000);
-        double thousandsFee = thousands * 20.0;
+        // Grab the current transaction type from the spinner
+        String type = spinnerType.getSelectedItem().toString();
 
-        // 2. Calculate the remainder and apply the tier brackets
-        double remainder = baseAmount % 1000;
-        double remainderFee = 0.0;
+        if (type.equals("Buy Load")) {
+            // FLAT FEE RULE: Always exactly 3 pesos regardless of amount
+            calculatedFee = 3.0;
+        } else {
+            // --- AUTHENTIC SARI-SARI TIERED LOGIC (Cash In / Cash Out) ---
+            // 1. Calculate how many full thousands there are (₱20 each)
+            int thousands = (int) (baseAmount / 1000);
+            double thousandsFee = thousands * 20.0;
 
-        if (remainder > 0 && remainder <= 499) {
-            remainderFee = 5.0;
-        } else if (remainder >= 500 && remainder <= 599) {
-            remainderFee = 10.0;
-        } else if (remainder >= 600 && remainder <= 999) {
-            remainderFee = 15.0;
+            // 2. Calculate the remainder and apply the tier brackets
+            double remainder = baseAmount % 1000;
+            double remainderFee = 0.0;
+
+            if (remainder > 0 && remainder <= 499) {
+                remainderFee = 5.0;
+            } else if (remainder >= 500 && remainder <= 599) {
+                remainderFee = 10.0;
+            } else if (remainder >= 600 && remainder <= 999) {
+                remainderFee = 15.0;
+            }
+
+            // 3. Combine them for the total fee! (e.g., 1550 -> 20 + 10 = 30)
+            calculatedFee = thousandsFee + remainderFee;
         }
-
-        // 3. Combine them for the total fee! (e.g., 1550 -> 20 + 10 = 30)
-        calculatedFee = thousandsFee + remainderFee;
-
-
 
         // The Toggle Logic
         if (switchFee.isChecked()) {
