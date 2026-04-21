@@ -51,21 +51,28 @@
                 android:textColorHint="@color/kanto_neutral"
                 android:layout_marginBottom="16dp"/>
 
-            <EditText
-                android:textCursorDrawable="@null"
-                android:id="@+id/etPassword"
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_rounded_input"
-                android:drawableStart="@drawable/ic_lock"
-                android:drawablePadding="12dp"
-                android:hint="Password"
-                android:inputType="textPassword"
-                android:maxLength="12"
-                android:textColor="@color/kanto_text_body"
-                android:textColorHint="@color/kanto_neutral"
-                android:layout_marginBottom="24dp"/>
+                android:layout_marginBottom="24dp"
+                app:hintEnabled="false"
+                app:passwordToggleEnabled="true"
+                app:passwordToggleTint="@color/kanto_primary">
 
+                <EditText
+                    android:textCursorDrawable="@null"
+                    android:id="@+id/etPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_rounded_input"
+                    android:drawableStart="@drawable/ic_lock"
+                    android:drawablePadding="12dp"
+                    android:hint="Password"
+                    android:inputType="textPassword"
+                    android:maxLength="12"
+                    android:textColor="@color/kanto_text_body"
+                    android:textColorHint="@color/kanto_neutral"/>
+            </com.google.android.material.textfield.TextInputLayout>
             <Button
                 android:id="@+id/btnLogin"
                 android:textColor="@color/white"
