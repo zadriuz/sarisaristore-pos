@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "689120950043",
+    "project_id": "sarisaristoreapp-99b12",
+    "storage_bucket": "sarisaristoreapp-99b12.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:689120950043:android:5763f5217022e751a4c5be",
+        "android_client_info": {
+          "package_name": "com.example.sarisaristoreapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADJ5b-xxu2W7tif36ymV0n3ey-VU5mPk0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

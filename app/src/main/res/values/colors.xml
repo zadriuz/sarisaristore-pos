@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="kanto_bg">#D5DBD0</color>
+    <color name="kanto_card">#E9F0E4</color>
+
+    <color name="kanto_primary">#578157</color>
+    <color name="kanto_secondary">#6A7C68</color>
+    <color name="kanto_tertiary">#767B44</color>
+    <color name="kanto_neutral">#757872</color>
+
+    <color name="kanto_text_head">#2C332B</color>
+    <color name="kanto_text_body">#5A6157</color>
+    <color name="kanto_yellow">#F2F7A1</color>
+
+    <color name="white">#FFFFFF</color>
+</resources>

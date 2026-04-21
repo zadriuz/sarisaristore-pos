@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F1F8F4"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:elevation="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <ImageView
+            android:id="@+id/btnMenu"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_menu"
+            app:tint="@color/kanto_primary" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Inventory"
+            android:textAlignment="center"
+            android:textColor="@color/kanto_primary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <ImageView
+            android:id="@+id/btnInfo"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_info"
+            app:tint="@color/kanto_primary" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="24dp"
+        android:layout_marginBottom="24dp"
+        android:layout_marginTop="24dp">
+
+        <EditText
+            android:id="@+id/etSearchInventory"
+            android:textColor="@color/kanto_text_head"
+            android:layout_width="0dp"
+            android:layout_height="55dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_rounded_input"
+            android:backgroundTint="#E8F0E3"
+            android:drawableStart="@drawable/ic_search"
+            android:drawablePadding="12dp"
+            android:hint="Search"
+            android:textColorHint="#94A3B8"
+            android:paddingHorizontal="16dp"
+            android:textSize="16sp"
+            android:layout_marginEnd="12dp" />
+
+        <ImageView
+            android:id="@+id/btnAddNewItemUI"
+            android:layout_width="55dp"
+            android:layout_height="55dp"
+            android:background="@drawable/bg_rounded_button"
+            android:backgroundTint="@color/kanto_primary"
+            android:src="@drawable/ic_add"
+            android:padding="16dp"
+            app:tint="@color/white" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/listInventory"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="24dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+        <Button android:id="@+id/btnScanInventory" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <EditText android:id="@+id/etNewBarcode" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <EditText android:id="@+id/etNewName" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <EditText android:id="@+id/etNewBasePrice" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <EditText android:id="@+id/etNewSellingPrice" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <EditText android:id="@+id/etNewQty" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+        <Button android:id="@+id/btnSaveProduct" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+    </LinearLayout>
+
+</LinearLayout>
