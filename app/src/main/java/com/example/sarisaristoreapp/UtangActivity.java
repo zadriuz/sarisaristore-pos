@@ -76,9 +76,7 @@ public class UtangActivity extends AppCompatActivity {
                 android.widget.TextView tvMessage = infoDialog.findViewById(R.id.tvInfoMessage);
                 android.widget.Button btnGotIt = infoDialog.findViewById(R.id.btnInfoGotIt);
 
-                // --- CHANGE THIS TEXT FOR EACH ACTIVITY ---
                 tvMessage.setText("This is the Utang ledger. Track neighbor debts, record partial or full payments, and view borrowing history to manage the store's credit.");
-                // ------------------------------------------
 
                 btnGotIt.setOnClickListener(view -> infoDialog.dismiss());
 
@@ -93,30 +91,23 @@ public class UtangActivity extends AppCompatActivity {
             public void onViewDetails(String targetNeighbor, double currentBalance) {
                 dbHelper.getNeighborHistory(targetNeighbor, historyLines -> {
 
-                    // 1. Build the Detailed History String
                     StringBuilder historyMessage = new StringBuilder();
                     for (String line : historyLines) {
-                        // Dawg: If your DB isn't returning specific items here,
-                        // you will need to upgrade your SQL query inside DatabaseHelper!
-                        // For now, it prints whatever detailed lines the DB gives it.
                         historyMessage.append("• ").append(line).append("\n\n");
                     }
                     if (historyLines.isEmpty()) {
                         historyMessage.append("No detailed timeline found.");
                     }
 
-                    // 2. Summon the Custom Bottom Sheet
                     android.app.Dialog statementDialog = new android.app.Dialog(UtangActivity.this);
                     View sheetView = getLayoutInflater().inflate(R.layout.layout_statement_sheet, null);
 
-                    // 3. Link the UI Elements
                     TextView tvName = sheetView.findViewById(R.id.tvStatementName);
                     TextView tvHistory = sheetView.findViewById(R.id.tvStatementHistory);
                     TextView tvBalance = sheetView.findViewById(R.id.tvStatementBalance);
                     ImageButton btnClose = sheetView.findViewById(R.id.btnCloseStatement);
                     Button btnSettle = sheetView.findViewById(R.id.btnSettleStatement);
 
-                    // SECURE THE GATE: Hide the Settle button for cashiers!
                     android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
                     boolean isAdmin = prefs.getBoolean("IsAdmin", false);
 
@@ -124,35 +115,29 @@ public class UtangActivity extends AppCompatActivity {
                         btnSettle.setVisibility(View.GONE);
                     }
 
-                    // 4. Fill the Data
                     tvName.setText(targetNeighbor);
                     tvHistory.setText(historyMessage.toString());
                     tvBalance.setText(String.format("₱%.2f", currentBalance));
 
-                    // 5. Wire the Buttons
                     btnClose.setOnClickListener(v1 -> statementDialog.dismiss());
 
                     btnSettle.setOnClickListener(v1 -> {
                         statementDialog.dismiss();
-                        showPaymentInput(targetNeighbor, currentBalance); // Directly opens the payment box!
+                        showPaymentInput(targetNeighbor, currentBalance);
                     });
 
-                    // 1. Load the XML
                     statementDialog.setContentView(sheetView);
 
-                    // 2. THE INVISIBLE CLOAK: Put this right here!
                     if (statementDialog.getWindow() != null) {
                         statementDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
                     }
 
-                    // 3. Show the dialog
                     statementDialog.show();
                 });
             }
 
             @Override
             public void onSettleDebt(String targetNeighbor, double currentBalance) {
-                // SECURE THE GATE: Hide the Settle button for cashiers!
                 android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
                 boolean isAdmin = prefs.getBoolean("IsAdmin", false);
 
@@ -167,10 +152,8 @@ public class UtangActivity extends AppCompatActivity {
 
         listUtang.setAdapter(adapter);
 
-        // Fetch live balances
         loadUtangData();
 
-        // LIVE SEARCH ENGINE
         etSearchNeighbor.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -182,7 +165,6 @@ public class UtangActivity extends AppCompatActivity {
             }
         });
 
-        // WAKE UP THE SECURE MENU
         btnMenu.setOnClickListener(v -> showAdminMenu());
 
     }
@@ -229,16 +211,13 @@ public class UtangActivity extends AppCompatActivity {
         TextView btnQuick500 = sheetView.findViewById(R.id.btnQuick500);
         Button btnConfirm = sheetView.findViewById(R.id.btnConfirmPayment);
 
-        // Populate the Headers
         tvTitle.setText("Receive Payment: " + targetNeighbor);
         tvBalance.setText(String.format("Current Balance: ₱%.2f", currentBalance));
 
-        // Wire the Quick Select Buttons (Accumulator Mode!)
         btnQuickFull.setOnClickListener(v -> etAmount.setText(String.valueOf(currentBalance)));
 
         btnQuick100.setOnClickListener(v -> {
             String currentStr = etAmount.getText().toString().trim();
-            // If the box is empty, treat it as 0. Otherwise, grab the number!
             double current = currentStr.isEmpty() ? 0.0 : Double.parseDouble(currentStr);
             etAmount.setText(String.valueOf(current + 100));
         });
@@ -251,7 +230,6 @@ public class UtangActivity extends AppCompatActivity {
 
         btnMenu.setOnClickListener(v -> showAdminMenu());
 
-        // Wire the Checkout Button
         btnConfirm.setOnClickListener(v -> {
             String paymentStr = etAmount.getText().toString().trim();
             if (paymentStr.isEmpty()) {
@@ -266,25 +244,49 @@ public class UtangActivity extends AppCompatActivity {
                 return;
             }
 
+            // --- GEMINI'S REVISED OVERPAYMENT ENGINE ---
+            double settleAmount;
+            double change = 0.0;
+            String transactionTitle = "Utang Payment (" + targetNeighbor + ")";
+
             if (paymentAmount > currentBalance) {
-                Toast.makeText(UtangActivity.this, "Payment cannot exceed balance!", Toast.LENGTH_SHORT).show();
-                return;
+                settleAmount = currentBalance;
+                change = paymentAmount - currentBalance;
+                transactionTitle += " [Overpaid]";
+            } else {
+                settleAmount = paymentAmount;
             }
 
-            // Trojan Horse Math
-            double remainingBalance = currentBalance - paymentAmount;
-
-            Product dummyPayment = new Product(0, 1, 0.0, paymentAmount, "UTANG_PAYMENT", "Payment from " + targetNeighbor, "Utang");
+            // THE FIX 1: This ensures remaining balance hits exactly 0.00 on overpayments
+            double remainingBalance = currentBalance - settleAmount;
 
             ArrayList<Product> paymentDetails = new ArrayList<>();
+
+            // Log the actual debt being erased
+            Product dummyPayment = new Product(0, 1, 0.0, settleAmount, "UTANG_PAYMENT", "Payment from " + targetNeighbor, "Utang");
             paymentDetails.add(dummyPayment);
+
+            // Log the change dynamically deducted from the Tindahan purse
+            if (change > 0) {
+                Product changeDeduction = new Product(0, 1, 0.0, -change, "CHANGE_DISPENSED", "Change deducted from Tindahan", "Cash");
+                paymentDetails.add(changeDeduction);
+            }
 
             String deviceName = android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL;
 
-            dbHelper.saveTransaction("Utang Payment (" + targetNeighbor + ")", "Cash", paymentAmount, paymentAmount, remainingBalance, deviceName, paymentDetails);
-            dbHelper.logDebt(targetNeighbor, -paymentAmount);
+            // THE FIX 2: Pass paymentAmount (Cash), currentBalance (Total Debt), and remainingBalance (0.00)
+            // THE PERFECT MAPPING: Original Debt | Cash Given | Remaining Balance
+            dbHelper.saveTransaction(transactionTitle, "Cash", currentBalance, paymentAmount, remainingBalance, deviceName, paymentDetails);
 
-            Toast.makeText(UtangActivity.this, "Payment of ₱" + String.format("%.2f", paymentAmount) + " logged!", Toast.LENGTH_SHORT).show();
+            // Only reduce the Utang by the exact debt amount, preventing negative balances
+            dbHelper.logDebt(targetNeighbor, -settleAmount);
+
+            if (change > 0) {
+                Toast.makeText(UtangActivity.this, "Debt cleared! Give Change: ₱" + String.format("%.2f", change), Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(UtangActivity.this, "Payment of ₱" + String.format("%.2f", settleAmount) + " logged!", Toast.LENGTH_SHORT).show();
+            }
+            // --- END OF ENGINE ---
 
             etSearchNeighbor.setText("");
             loadUtangData();
@@ -299,7 +301,6 @@ public class UtangActivity extends AppCompatActivity {
         com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
         View sheet = getLayoutInflater().inflate(R.layout.layout_bottom_sheet, null);
 
-        // Define Buttons
         Button btnHistory = sheet.findViewById(R.id.btnMenuHistory);
         Button btnUtang = sheet.findViewById(R.id.btnMenuUtang);
         Button btnInventory = sheet.findViewById(R.id.btnMenuInventory);
@@ -307,23 +308,19 @@ public class UtangActivity extends AppCompatActivity {
         Button btnAdmin = sheet.findViewById(R.id.btnMenuAdmin);
         Button btnCheckout = sheet.findViewById(R.id.btnMenuCheckout);
 
-        // SECURE THE GATE: Check Admin Status from SharedPreferences
         android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
         boolean isAdmin = prefs.getBoolean("IsAdmin", false);
 
-        // Hide admin-only buttons if not admin
         if (!isAdmin) {
             btnInventory.setVisibility(View.GONE);
             btnGcash.setVisibility(View.GONE);
             btnAdmin.setVisibility(View.GONE);
         }
 
-        // Logic (Navigation)
         btnCheckout.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, MainActivity.class)); finish(); });
         btnHistory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, HistoryActivity.class)); finish(); });
         btnUtang.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, UtangActivity.class)); finish(); });
 
-        // Admin-only logic
         if (isAdmin) {
             btnInventory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, InventoryActivity.class)); finish(); });
             btnGcash.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, GCashActivity.class)); finish(); });
@@ -331,7 +328,6 @@ public class UtangActivity extends AppCompatActivity {
         }
 
         dialog.setContentView(sheet);
-        // FORCE EXPAND & KILL DRAG (The Scroll Trap Fix)
         com.google.android.material.bottomsheet.BottomSheetBehavior behavior = dialog.getBehavior();
         behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
         dialog.show();

@@ -141,13 +141,19 @@ public class HistoryActivity extends AppCompatActivity {
                 if (paymentMethod.contains("Utang")) {
                     receiptMessage.append("Charge To: ").append(paymentMethod).append("\n-------------------\n");
                 } else if (purseType.contains("Utang Payment") || paymentMethod.contains("Remitted")) {
-                    // THE DYNAMIC MATH ENGINE
-                    double amountPaid = clickedRecord.getTotalAmount();
-                    double remainingBal = clickedRecord.getChangeAmount();
-                    double originalDebt = amountPaid + remainingBal;
 
-                    receiptMessage.append(String.format("Paid ₱%.2f out of ₱%.2f", amountPaid, originalDebt))
-                            .append("\n-------------------\n");
+                    // UNPACKING THE PERFECT MAPPING
+                    double originalDebt = clickedRecord.getTotalAmount();  // Slot 1: The original 500
+                    double cashHandedOver = clickedRecord.getCashGiven();  // Slot 2: The 200, 500, or 1000
+                    double remainingBal = clickedRecord.getChangeAmount(); // Slot 3: The 300, 0, or 0
+
+                    if (cashHandedOver > originalDebt) {
+                        receiptMessage.append(String.format("Paid ₱%.2f out of ₱%.2f [Overpaid]\n(Change Dispensed: ₱%.2f)", cashHandedOver, originalDebt, (cashHandedOver - originalDebt)))
+                                .append("\n-------------------\n");
+                    } else {
+                        receiptMessage.append(String.format("Paid ₱%.2f out of ₱%.2f", cashHandedOver, originalDebt))
+                                .append("\n-------------------\n");
+                    }
                 }
 
                 for(String item : itemList){

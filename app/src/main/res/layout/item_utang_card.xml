@@ -88,11 +88,12 @@
             android:background="@drawable/bg_spinner_outline"
             android:text="Settle"
             android:textSize="14sp"
-            android:textColor="@color/kanto_text_head"
+
             android:textStyle="bold"
+            android:textColor="@color/white"
             app:icon="@drawable/ic_receipt"
             app:iconGravity="textStart"
-            app:iconTint="@color/kanto_text_head" />
+            app:iconTint="@color/white" />
     </LinearLayout>
 
 </LinearLayout>
