@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -29,15 +30,17 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
     public class CartViewHolder extends RecyclerView.ViewHolder {
         TextView tvItemName, tvItemStock, tvItemQty, tvItemPrice;
         ImageButton btnPlus, btnMinus;
+        ImageView btnDeleteCartItem; // ADDED THIS
 
         public CartViewHolder(@NonNull View itemView) {
             super(itemView);
             tvItemName = itemView.findViewById(R.id.tvItemName);
-            tvItemStock = itemView.findViewById(R.id.tvItemStock); // Using this to show barcode
+            tvItemStock = itemView.findViewById(R.id.tvItemStock);
             tvItemQty = itemView.findViewById(R.id.tvItemQty);
             tvItemPrice = itemView.findViewById(R.id.tvItemPrice);
             btnPlus = itemView.findViewById(R.id.btnPlus);
             btnMinus = itemView.findViewById(R.id.btnMinus);
+            btnDeleteCartItem = itemView.findViewById(R.id.btnDeleteCartItem); // ADDED THIS
         }
     }
 
@@ -94,6 +97,19 @@ public class CartAdapter extends RecyclerView.Adapter<CartAdapter.CartViewHolder
             }
             listener.onCartUpdated(); // Tells MainActivity to recalculate the Grand Total
         });
+
+        // --- THE VAPORIZER (Trash Can) ---
+        if (holder.btnDeleteCartItem != null) {
+            holder.btnDeleteCartItem.setOnClickListener(v -> {
+                int currentPosition = holder.getAdapterPosition();
+                if (currentPosition != RecyclerView.NO_POSITION) {
+                    checkoutCart.remove(currentPosition);
+                    notifyItemRemoved(currentPosition);
+                    notifyItemRangeChanged(currentPosition, checkoutCart.size());
+                    listener.onCartUpdated(); // Tells MainActivity to recalculate the Grand Total
+                }
+            });
+        }
     }
 
     @Override

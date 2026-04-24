@@ -7,8 +7,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -25,19 +25,17 @@ import java.util.HashMap;
 
 public class InventoryActivity extends AppCompatActivity {
 
-    EditText etNewBarcode;
-    EditText etNewName;
-    EditText etNewBasePrice;
-    EditText etNewSellingPrice;
-    EditText etNewQty;
+    EditText etNewBarcode, etNewName, etNewBasePrice, etNewSellingPrice, etNewQty;
     Button btnSaveProduct;
     RecyclerView listInventory;
 
     DatabaseHelper dbHelper;
-
     ArrayList<Product> inventoryList = new ArrayList<>();
     InventoryAdapter inventoryAdapter;
+
     private EditText currentBarcodeTarget;
+    // We track the open Add Sheet so we can forcefully close it if they switch to Edit mode!
+    private com.google.android.material.bottomsheet.BottomSheetDialog activeAddSheet = null;
 
     // THE CATCHER'S MITT for Inventory
     private final androidx.activity.result.ActivityResultLauncher<com.journeyapps.barcodescanner.ScanOptions> inventoryBarcodeLauncher =
@@ -45,8 +43,24 @@ public class InventoryActivity extends AppCompatActivity {
                 if(result.getContents() == null) {
                     Toast.makeText(InventoryActivity.this, "Scan cancelled", Toast.LENGTH_SHORT).show();
                 } else {
-                    if (currentBarcodeTarget != null) {
-                        currentBarcodeTarget.setText(result.getContents());
+                    String scannedCode = result.getContents();
+
+                    // 1. CHECK IF THE BARCODE ALREADY EXISTS IN INVENTORY
+                    Product existingProduct = null;
+                    for (Product p : inventoryList) {
+                        if (p.getBarcode() != null && p.getBarcode().equals(scannedCode)) {
+                            existingProduct = p;
+                            break;
+                        }
+                    }
+
+                    // 2. IF IT EXISTS, TRIGGER THE ALERT
+                    if (existingProduct != null) {
+                        showProductExistsDialog(existingProduct);
+                    }
+                    // 3. IF IT IS NEW, JUST PUT IT IN THE BOX
+                    else if (currentBarcodeTarget != null) {
+                        currentBarcodeTarget.setText(scannedCode);
                     }
                 }
             });
@@ -57,7 +71,6 @@ public class InventoryActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_inventory);
 
-        // TELEPORT BACK TO POS CHECKOUT
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -67,30 +80,20 @@ public class InventoryActivity extends AppCompatActivity {
         });
 
         getWindow().setStatusBarColor(getResources().getColor(R.color.kanto_primary));
-
         dbHelper = new DatabaseHelper(this);
 
-        // The Universal Info Trapdoor
         ImageView btnInfo = findViewById(R.id.btnInfo);
-
         if (btnInfo != null) {
             btnInfo.setOnClickListener(v -> {
                 android.app.Dialog infoDialog = new android.app.Dialog(this);
                 infoDialog.setContentView(R.layout.layout_info_dialog);
-
                 if (infoDialog.getWindow() != null) {
                     infoDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
                 }
-
-                android.widget.TextView tvMessage = infoDialog.findViewById(R.id.tvInfoMessage);
-                android.widget.Button btnGotIt = infoDialog.findViewById(R.id.btnInfoGotIt);
-
-                // --- CHANGE THIS TEXT FOR EACH ACTIVITY ---
+                TextView tvMessage = infoDialog.findViewById(R.id.tvInfoMessage);
+                Button btnGotIt = infoDialog.findViewById(R.id.btnInfoGotIt);
                 tvMessage.setText("This is your store's active inventory. Add new products, update prices, adjust stock levels, and delete discontinued items to keep your database accurate.");
-                // ------------------------------------------
-
                 btnGotIt.setOnClickListener(view -> infoDialog.dismiss());
-
                 infoDialog.show();
             });
         }
@@ -104,27 +107,20 @@ public class InventoryActivity extends AppCompatActivity {
         listInventory = findViewById(R.id.listInventory);
 
         listInventory.setLayoutManager(new androidx.recyclerview.widget.LinearLayoutManager(this));
-
         inventoryAdapter = new InventoryAdapter(inventoryList);
         listInventory.setAdapter(inventoryAdapter);
         refreshInventoryList();
 
         Button btnScanInventory = findViewById(R.id.btnScanInventory);
-        btnScanInventory.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                com.journeyapps.barcodescanner.ScanOptions options = new com.journeyapps.barcodescanner.ScanOptions();
-                options.setPrompt("Scan item to Add/Update Stock");
-                options.setBeepEnabled(true);
-                options.setOrientationLocked(true);
-                options.setCaptureActivity(PortraitCaptureActivity.class); // Using the custom portrait mode we built!
-
-                inventoryBarcodeLauncher.launch(options);
-            }
+        btnScanInventory.setOnClickListener(v -> {
+            com.journeyapps.barcodescanner.ScanOptions options = new com.journeyapps.barcodescanner.ScanOptions();
+            options.setPrompt("Scan item to Add/Update Stock");
+            options.setBeepEnabled(true);
+            options.setOrientationLocked(true);
+            options.setCaptureActivity(PortraitCaptureActivity.class);
+            inventoryBarcodeLauncher.launch(options);
         });
 
-        // --- 1. THE SEARCH ENGINE ---
-        // --- 1. THE SEARCH ENGINE ---
         EditText etSearch = findViewById(R.id.etSearchInventory);
         etSearch.addTextChangedListener(new android.text.TextWatcher() {
             @Override
@@ -133,107 +129,247 @@ public class InventoryActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override
             public void afterTextChanged(android.text.Editable s) {
-                // THE FIX: Trigger the master engine!
                 applyCurrentFilters();
             }
         });
 
-        // --- 2. THE MENU WIRING ---
         ImageView btnMenu = findViewById(R.id.btnMenu);
-        // WAKE UP THE SECURE MENU
         btnMenu.setOnClickListener(v -> showAdminMenu());
 
-        // --- 4. THE CATEGORY FILTER ENGINE ---
-        // --- 4. THE CATEGORY FILTER ENGINE ---
         android.widget.RadioGroup radioGroupCategory = findViewById(R.id.radioGroupCategory);
-        radioGroupCategory.setOnCheckedChangeListener((group, checkedId) -> {
-            // THE FIX: Trigger the master engine!
-            applyCurrentFilters();
-        });
+        radioGroupCategory.setOnCheckedChangeListener((group, checkedId) -> applyCurrentFilters());
 
-        // --- 3. THE ADD ITEM BUTTON ---
-        // --- 3. THE ADD ITEM BUTTON ---
         ImageView btnAdd = findViewById(R.id.btnAddNewItemUI);
-        btnAdd.setOnClickListener(v -> {
-            com.google.android.material.bottomsheet.BottomSheetDialog addDialog = new com.google.android.material.bottomsheet.BottomSheetDialog(InventoryActivity.this);
-            View sheetView = getLayoutInflater().inflate(R.layout.layout_add_product_sheet, null);
-
-            EditText etSheetBarcode = sheetView.findViewById(R.id.etSheetBarcode);
-            ImageView btnSheetScan = sheetView.findViewById(R.id.btnSheetScan);
-            EditText etSheetName = sheetView.findViewById(R.id.etSheetName);
-            EditText etSheetCost = sheetView.findViewById(R.id.etSheetCost);
-            EditText etSheetSell = sheetView.findViewById(R.id.etSheetSell);
-            EditText etSheetQty = sheetView.findViewById(R.id.etSheetQty);
-            Button btnSheetSave = sheetView.findViewById(R.id.btnSheetSave);
-
-            Spinner spinnerCat = sheetView.findViewById(R.id.spinnerCategory);
-            String[] categories = {"Tindahan", "Softdrinks", "Print"};
-
-            // 1. Use your custom SLIM layout for the closed box
-            android.widget.ArrayAdapter<String> catAdapter = new android.widget.ArrayAdapter<>(this, R.layout.item_spinner_selected, categories);
-
-            // 2. Use your custom FAT layout for the dropdown list
-            catAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
-
-            spinnerCat.setAdapter(catAdapter);
-
-            // Tell the scanner where to put the barcode when it returns!
-            currentBarcodeTarget = etSheetBarcode;
-
-            // Wire the specific scanner button inside the bottom sheet
-            btnSheetScan.setOnClickListener(v1 -> {
-                com.journeyapps.barcodescanner.ScanOptions options = new com.journeyapps.barcodescanner.ScanOptions();
-                options.setPrompt("Scan item barcode");
-                options.setBeepEnabled(true);
-                options.setOrientationLocked(true);
-                options.setCaptureActivity(PortraitCaptureActivity.class);
-                inventoryBarcodeLauncher.launch(options);
-            });
-
-            btnSheetSave.setOnClickListener(v1 -> {
-                String bar = etSheetBarcode.getText().toString().trim();
-                String name = etSheetName.getText().toString().trim();
-                String costStr = etSheetCost.getText().toString().trim();
-                String sellStr = etSheetSell.getText().toString().trim();
-                String qtyStr = etSheetQty.getText().toString().trim();
-
-                if(name.isEmpty() || costStr.isEmpty() || sellStr.isEmpty() || qtyStr.isEmpty()){
-                    Toast.makeText(InventoryActivity.this, "Please fill all required fields!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                if(bar.isEmpty()) bar = "MANUAL_" + System.currentTimeMillis();
-
-                double cost = Double.parseDouble(costStr);
-                double sell = Double.parseDouble(sellStr);
-                int qty = Integer.parseInt(qtyStr);
-
-                // Grab the category from the spinner
-                String selectedCategory = spinnerCat.getSelectedItem().toString();
-
-// Pass it as the 7th argument!
-                Product newProduct = new Product(0, qty, cost, sell, bar, name, selectedCategory);
-
-                if(dbHelper.addProduct(newProduct)){
-                    Toast.makeText(InventoryActivity.this, "Product Saved!", Toast.LENGTH_SHORT).show();
-                    refreshInventoryList();
-                    addDialog.dismiss();
-                } else {
-                    Toast.makeText(InventoryActivity.this, "Error: Barcode already exists!", Toast.LENGTH_SHORT).show();
-                }
-            });
-
-            addDialog.setContentView(sheetView);
-            addDialog.show();
-        });
-
-        btnMenu.setOnClickListener(v -> showAdminMenu());
+        btnAdd.setOnClickListener(v -> showAddProductSheet(null)); // Pass null for standard click
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        // --- THE TELEPORTER RECEIVER ---
+        // If MainActivity sent us a barcode, we instantly open the Add panel!
+        String incomingBarcode = getIntent().getStringExtra("NEW_BARCODE");
+        if (incomingBarcode != null && !incomingBarcode.isEmpty()) {
+            showAddProductSheet(incomingBarcode);
+        }
+    }
+
+    // --- THE ADD PRODUCT ENGINE ---
+    private void showAddProductSheet(String prefillBarcode) {
+        activeAddSheet = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
+        View sheetView = getLayoutInflater().inflate(R.layout.layout_add_product_sheet, null);
+
+        EditText etSheetBarcode = sheetView.findViewById(R.id.etSheetBarcode);
+        ImageView btnSheetScan = sheetView.findViewById(R.id.btnSheetScan);
+        EditText etSheetName = sheetView.findViewById(R.id.etSheetName);
+        EditText etSheetCost = sheetView.findViewById(R.id.etSheetCost);
+        EditText etSheetSell = sheetView.findViewById(R.id.etSheetSell);
+        EditText etSheetQty = sheetView.findViewById(R.id.etSheetQty);
+        Button btnSheetSave = sheetView.findViewById(R.id.btnSheetSave);
+        Spinner spinnerCat = sheetView.findViewById(R.id.spinnerCategory);
+
+        String[] categories = {"Tindahan", "Softdrinks", "Print"};
+        ArrayAdapter<String> catAdapter = new ArrayAdapter<>(this, R.layout.item_spinner_selected, categories);
+        catAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        spinnerCat.setAdapter(catAdapter);
+
+        // If the Teleporter brought a barcode, plug it in immediately!
+        if (prefillBarcode != null && !prefillBarcode.isEmpty()) {
+            etSheetBarcode.setText(prefillBarcode);
+        }
+
+        currentBarcodeTarget = etSheetBarcode;
+
+        btnSheetScan.setOnClickListener(v1 -> {
+            com.journeyapps.barcodescanner.ScanOptions options = new com.journeyapps.barcodescanner.ScanOptions();
+            options.setPrompt("Scan item barcode");
+            options.setBeepEnabled(true);
+            options.setOrientationLocked(true);
+            options.setCaptureActivity(PortraitCaptureActivity.class);
+            inventoryBarcodeLauncher.launch(options);
+        });
+
+        btnSheetSave.setOnClickListener(v1 -> {
+            String bar = etSheetBarcode.getText().toString().trim();
+            String name = etSheetName.getText().toString().trim();
+            String costStr = etSheetCost.getText().toString().trim();
+            String sellStr = etSheetSell.getText().toString().trim();
+            String qtyStr = etSheetQty.getText().toString().trim();
+
+            if(name.isEmpty() || costStr.isEmpty() || sellStr.isEmpty() || qtyStr.isEmpty()){
+                Toast.makeText(InventoryActivity.this, "Please fill all required fields!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if(bar.isEmpty()) bar = "MANUAL_" + System.currentTimeMillis();
+
+            double cost = Double.parseDouble(costStr);
+            double sell = Double.parseDouble(sellStr);
+            int qty = Integer.parseInt(qtyStr);
+            String selectedCategory = spinnerCat.getSelectedItem().toString();
+
+            Product newProduct = new Product(0, qty, cost, sell, bar, name, selectedCategory);
+
+            if(dbHelper.addProduct(newProduct)){
+                Toast.makeText(InventoryActivity.this, "Product Saved!", Toast.LENGTH_SHORT).show();
+                refreshInventoryList();
+                activeAddSheet.dismiss();
+            } else {
+                Toast.makeText(InventoryActivity.this, "Error: Barcode already exists!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        activeAddSheet.setContentView(sheetView);
+        activeAddSheet.show();
+
+        // FORCE FULL EXPAND AFTER SHOWING
+        com.google.android.material.bottomsheet.BottomSheetBehavior behavior = activeAddSheet.getBehavior();
+        behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
+    }
+
+    // --- THE EDIT PRODUCT ENGINE (Moved here from the Adapter!) ---
+    public void openEditProductPanel(Product currentItem) {
+        com.google.android.material.bottomsheet.BottomSheetDialog editDialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
+
+        // Inject right under: activeAddSheet = new BottomSheetDialog(this);
+        activeAddSheet.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+
+// Inject right under: BottomSheetDialog editDialog = new BottomSheetDialog(this);
+        editDialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+
+        View sheetView = getLayoutInflater().inflate(R.layout.layout_edit_product_sheet, null);
+
+        EditText etBarcode = sheetView.findViewById(R.id.etEditBarcode);
+        EditText etName = sheetView.findViewById(R.id.etEditName);
+        EditText etCost = sheetView.findViewById(R.id.etEditCost);
+        EditText etSell = sheetView.findViewById(R.id.etEditSell);
+        EditText etQty = sheetView.findViewById(R.id.etEditQty);
+        ImageView btnScan = sheetView.findViewById(R.id.btnEditScan);
+        Button btnDelete = sheetView.findViewById(R.id.btnEditDelete);
+        Button btnSave = sheetView.findViewById(R.id.btnEditSave);
+        Spinner spinnerCat = sheetView.findViewById(R.id.spinnerCategory);
+
+        String[] categories = {"Tindahan", "Softdrinks", "Print"};
+        ArrayAdapter<String> catAdapter = new ArrayAdapter<>(this, R.layout.item_spinner_selected, categories);
+        catAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        spinnerCat.setAdapter(catAdapter);
+
+        // Pre-fill existing data!
+        etBarcode.setText(currentItem.getBarcode());
+        etName.setText(currentItem.getProductName());
+        etCost.setText(String.valueOf(currentItem.getCostPrice()));
+        etSell.setText(String.valueOf(currentItem.getSellingPrice()));
+        etQty.setText(String.valueOf(currentItem.getCurrentQuantity()));
+
+        if (currentItem.getCategory() != null) {
+            int spinnerPosition = catAdapter.getPosition(currentItem.getCategory());
+            if (spinnerPosition >= 0) {
+                spinnerCat.setSelection(spinnerPosition);
+            }
+        }
+
+        btnScan.setOnClickListener(v1 -> triggerEditScanner(etBarcode));
+
+        btnDelete.setOnClickListener(v1 -> {
+            android.app.Dialog customDialog = new android.app.Dialog(this);
+            customDialog.setContentView(R.layout.layout_alert_dialog);
+            if (customDialog.getWindow() != null) {
+                customDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+            }
+
+            TextView tvTitle = customDialog.findViewById(R.id.tvAlertTitle);
+            TextView tvMessage = customDialog.findViewById(R.id.tvAlertMessage);
+            Button btnCancel = customDialog.findViewById(R.id.btnAlertCancel);
+            Button btnConfirm = customDialog.findViewById(R.id.btnAlertConfirm);
+
+            tvTitle.setText("Delete Item?");
+            tvMessage.setText("Are you sure you want to permanently delete " + currentItem.getProductName() + "? This cannot be undone.");
+            btnConfirm.setText("Delete");
+
+            btnCancel.setOnClickListener(view -> customDialog.dismiss());
+            btnConfirm.setOnClickListener(view -> {
+                dbHelper.deleteProduct(currentItem.getBarcode());
+                Toast.makeText(this, "Item Deleted!", Toast.LENGTH_SHORT).show();
+                refreshInventoryList(); // Reloads the list
+                customDialog.dismiss();
+                editDialog.dismiss();
+            });
+            customDialog.show();
+        });
+
+        btnSave.setOnClickListener(v1 -> {
+            String newName = etName.getText().toString();
+            String costText = etCost.getText().toString();
+            String sellText = etSell.getText().toString();
+            String qtyText = etQty.getText().toString();
+            String newBarcode = etBarcode.getText().toString();
+
+            if(newName.isEmpty() || costText.isEmpty() || sellText.isEmpty() || qtyText.isEmpty()){
+                Toast.makeText(this, "Please fill all fields!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            currentItem.setProductName(newName);
+            currentItem.setCostPrice(Double.parseDouble(costText));
+            currentItem.setSellingPrice(Double.parseDouble(sellText));
+            currentItem.setCurrentQuantity(Integer.parseInt(qtyText));
+            currentItem.setBarcode(newBarcode);
+            currentItem.setCategory(spinnerCat.getSelectedItem().toString());
+
+            dbHelper.addProduct(currentItem); // Upsert logic
+            Toast.makeText(this, "Item Updated!", Toast.LENGTH_SHORT).show();
+            refreshInventoryList();
+            editDialog.dismiss();
+        });
+
+        editDialog.setContentView(sheetView);
+        editDialog.show();
+
+        // FORCE FULL EXPAND AFTER SHOWING
+        com.google.android.material.bottomsheet.BottomSheetBehavior behavior = editDialog.getBehavior();
+        behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
+    }
+
+    private void showProductExistsDialog(Product existingProduct) {
+        android.app.Dialog dialog = new android.app.Dialog(this);
+        View sheetView = getLayoutInflater().inflate(R.layout.layout_kanto_alert, null);
+
+        ImageView imgIcon = sheetView.findViewById(R.id.imgAlertIcon);
+        TextView tvTitle = sheetView.findViewById(R.id.tvAlertTitle);
+        TextView tvMessage = sheetView.findViewById(R.id.tvAlertMessage);
+        Button btnCancel = sheetView.findViewById(R.id.btnAlertLeft);
+        Button btnUpdate = sheetView.findViewById(R.id.btnAlertRight);
+
+        imgIcon.setImageResource(R.drawable.ic_info);
+        imgIcon.setColorFilter(android.graphics.Color.parseColor("#2E7D32"));
+
+        tvTitle.setText("Product Exists");
+        tvMessage.setText("This item (" + existingProduct.getProductName() + ") is already in your inventory. Do you want to pull its existing information to update it?");
+
+        btnCancel.setText("Cancel"); // Requested text change
+        btnUpdate.setText("Update Item");
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnUpdate.setOnClickListener(v -> {
+            dialog.dismiss();
+
+            // IF THE ADD SHEET IS OPEN IN THE BACKGROUND, KILL IT!
+            if (activeAddSheet != null && activeAddSheet.isShowing()) {
+                activeAddSheet.dismiss();
+            }
+
+            // TELEPORT TO THE EDIT PANEL
+            openEditProductPanel(existingProduct);
+        });
+
+        dialog.setContentView(sheetView);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+        dialog.show();
     }
 
     private void refreshInventoryList(){
@@ -241,21 +377,16 @@ public class InventoryActivity extends AppCompatActivity {
             @Override
             public void onDataLoaded(HashMap<String, Product> inventoryMap) {
                 inventoryList.clear();
-
                 for(Product p : inventoryMap.values()){
-                    // THE GHOST FILTER: Only load items that have actual barcodes!
                     if (p.getBarcode() != null && !p.getBarcode().trim().isEmpty() && !p.getBarcode().equals("null")) {
                         inventoryList.add(p);
                     }
                 }
-
-                // THE FIX: Trigger the master engine instead of manually updating the adapter!
                 applyCurrentFilters();
             }
         });
     }
 
-    // This lets the Adapter borrow our scanner!
     public void triggerEditScanner(EditText targetBox) {
         currentBarcodeTarget = targetBox;
         com.journeyapps.barcodescanner.ScanOptions options = new com.journeyapps.barcodescanner.ScanOptions();
@@ -270,7 +401,6 @@ public class InventoryActivity extends AppCompatActivity {
         com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
         View sheet = getLayoutInflater().inflate(R.layout.layout_bottom_sheet, null);
 
-        // Define Buttons
         Button btnHistory = sheet.findViewById(R.id.btnMenuHistory);
         Button btnUtang = sheet.findViewById(R.id.btnMenuUtang);
         Button btnInventory = sheet.findViewById(R.id.btnMenuInventory);
@@ -278,23 +408,19 @@ public class InventoryActivity extends AppCompatActivity {
         Button btnAdmin = sheet.findViewById(R.id.btnMenuAdmin);
         Button btnCheckout = sheet.findViewById(R.id.btnMenuCheckout);
 
-        // SECURE THE GATE: Check Admin Status from SharedPreferences
         android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
         boolean isAdmin = prefs.getBoolean("IsAdmin", false);
 
-        // Hide admin-only buttons if not admin
         if (!isAdmin) {
             btnInventory.setVisibility(View.GONE);
             btnGcash.setVisibility(View.GONE);
             btnAdmin.setVisibility(View.GONE);
         }
 
-        // Logic (Navigation)
         btnCheckout.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, MainActivity.class)); finish(); });
         btnHistory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, HistoryActivity.class)); finish(); });
         btnUtang.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, UtangActivity.class)); finish(); });
 
-        // Admin-only logic
         if (isAdmin) {
             btnInventory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, InventoryActivity.class)); finish(); });
             btnGcash.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, GCashActivity.class)); finish(); });
@@ -302,20 +428,15 @@ public class InventoryActivity extends AppCompatActivity {
         }
 
         dialog.setContentView(sheet);
-        // FORCE EXPAND & KILL DRAG (The Scroll Trap Fix)
         com.google.android.material.bottomsheet.BottomSheetBehavior behavior = dialog.getBehavior();
         behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
-
         dialog.show();
     }
 
-    // --- THE MASTER FILTER ENGINE ---
     private void applyCurrentFilters() {
-        // 1. Grab current search text
         android.widget.EditText etSearch = findViewById(R.id.etSearchInventory);
         String query = etSearch.getText().toString().toLowerCase().trim();
 
-        // 2. Grab current selected category
         android.widget.RadioGroup radioGroupCategory = findViewById(R.id.radioGroupCategory);
         int checkedId = radioGroupCategory.getCheckedRadioButtonId();
         String selectedCategory = "All";
@@ -323,24 +444,30 @@ public class InventoryActivity extends AppCompatActivity {
         else if (checkedId == R.id.radioSoftdrinks) selectedCategory = "Softdrinks";
         else if (checkedId == R.id.radioPrint) selectedCategory = "Print";
 
-        // 3. Filter the master list!
         ArrayList<Product> filteredList = new ArrayList<>();
+        String[] keywords = query.split("\\s+");
+
         for (Product item : inventoryList) {
-            // Check Category
             boolean matchesCategory = selectedCategory.equals("All") ||
                     (item.getCategory() != null && item.getCategory().equals(selectedCategory));
 
-            // Check Search
             String safeName = item.getProductName() != null ? item.getProductName().toLowerCase() : "";
             String safeBar = item.getBarcode() != null ? item.getBarcode().toLowerCase() : "";
-            boolean matchesSearch = query.isEmpty() || safeName.contains(query) || safeBar.contains(query);
 
-            // If it passes BOTH tests, show it!
+            boolean matchesSearch = true;
+            if (!query.isEmpty()) {
+                for (String word : keywords) {
+                    if (!safeName.contains(word) && !safeBar.contains(word)) {
+                        matchesSearch = false;
+                        break;
+                    }
+                }
+            }
+
             if (matchesCategory && matchesSearch) {
                 filteredList.add(item);
             }
         }
-
         inventoryAdapter.filterList(filteredList);
     }
 }

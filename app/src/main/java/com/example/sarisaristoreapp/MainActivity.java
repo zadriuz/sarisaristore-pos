@@ -54,9 +54,8 @@ public class MainActivity extends AppCompatActivity {
     EditText etBarcode, etQty, etCashRendered;
     Spinner spinnerPurse;
     TextView tvTotal, tvChange;
-    ImageView btnMenu; // Declaration ONLY - fixes the crash
+    ImageView btnMenu;
     Button btnMenuCheckout;
-
 
     DatabaseHelper dbHelper;
     public static ArrayList<Product> checkoutCart = new ArrayList<>();
@@ -105,7 +104,8 @@ public class MainActivity extends AppCompatActivity {
                         cartAdapter.notifyDataSetChanged();
                         recalculateGrandTotal();
                     }else{
-                        Toast.makeText(MainActivity.this, "Item not found in inventory!", Toast.LENGTH_SHORT).show();
+                        // THE KANTO ALERT INTERCEPTOR
+                        showItemNotFoundDialog(scannedCode);
                     }
                 }
             });
@@ -113,7 +113,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // EdgeToEdge removed to fix UI overlap bugs
         setContentView(R.layout.activity_main);
 
         // THE DOUBLE-TAP BACK BUTTON TRAPDOOR
@@ -121,7 +120,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void handleOnBackPressed() {
                 if (backPressedTime + 2000 > System.currentTimeMillis()) {
-                    // SECOND TAP: Summon the custom dialog!
                     android.app.Dialog customDialog = new android.app.Dialog(MainActivity.this);
                     customDialog.setContentView(R.layout.layout_alert_dialog);
 
@@ -142,12 +140,11 @@ public class MainActivity extends AppCompatActivity {
 
                     btnConfirm.setOnClickListener(view -> {
                         customDialog.dismiss();
-                        performLogout(); // Triggers your actual logout sequence!
+                        performLogout();
                     });
 
                     customDialog.show();
                 } else {
-                    // FIRST TAP: Show the warning toast
                     Toast.makeText(getBaseContext(), "Press back again to log out", Toast.LENGTH_SHORT).show();
                 }
                 backPressedTime = System.currentTimeMillis();
@@ -158,7 +155,6 @@ public class MainActivity extends AppCompatActivity {
         activeCashier = prefs.getString("ActiveUser", "Unknown");
         isAdmin = prefs.getBoolean("IsAdmin", false);
 
-        // The Universal Info Trapdoor
         ImageView btnInfo = findViewById(R.id.btnInfo);
 
         if (btnInfo != null) {
@@ -173,9 +169,7 @@ public class MainActivity extends AppCompatActivity {
                 android.widget.TextView tvMessage = infoDialog.findViewById(R.id.tvInfoMessage);
                 android.widget.Button btnGotIt = infoDialog.findViewById(R.id.btnInfoGotIt);
 
-                // --- CHANGE THIS TEXT FOR EACH ACTIVITY ---
                 tvMessage.setText("This is the main checkout screen. Scan barcodes, adjust quantities, select payment methods (Cash, GCash, or Utang), and process customer orders.");
-                // ------------------------------------------
 
                 btnGotIt.setOnClickListener(view -> infoDialog.dismiss());
 
@@ -195,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
         etCashRendered = findViewById(R.id.etCashRendered);
         tvChange = findViewById(R.id.tvChange);
 
-        btnMenu = findViewById(R.id.btnMenu); // Properly initialized after setContentView
+        btnMenu = findViewById(R.id.btnMenu);
 
         AutoCompleteTextView etSmartSearch = findViewById(R.id.etBarcode);
         searchAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, searchList);
@@ -214,24 +208,19 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public int getMaxStock(String barcode) {
-                // Return the real-time stock directly from the Master Inventory
                 if (globalInventory.containsKey(barcode)) {
                     return globalInventory.get(barcode).getCurrentQuantity();
                 }
-                return 0; // Failsafe if the item somehow doesn't exist
+                return 0;
             }
         });
         listCart.setAdapter(cartAdapter);
 
-        // WAKE UP THE STATIC CART UI
         recalculateGrandTotal();
         cartAdapter.notifyDataSetChanged();
 
-        // WAKE UP THE SECURE MENU
         btnMenu.setOnClickListener(v -> showAdminMenu());
-        // --- END BOTTOM SHEET WIRING ---
 
-        // CHANGE CALCULATOR
         etCashRendered.addTextChangedListener(new android.text.TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -281,17 +270,14 @@ public class MainActivity extends AppCompatActivity {
                 Product foundProduct = globalInventory.get(targetBarcode);
                 int parsedQty = Integer.parseInt(scannedQty);
 
-                // --- THE ZERO/NEGATIVE BOUNCER ---
                 if (parsedQty <= 0) {
                     Toast.makeText(MainActivity.this, "Quantity must be at least 1!", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                // --- THE CUMULATIVE STOCK CHECKER ---
                 int currentCartQty = 0;
                 Product existingCartItem = null;
 
-                // 1. Scan the cart to see if this item is already in there
                 for (Product p : checkoutCart) {
                     if (p.getBarcode().equals(foundProduct.getBarcode())) {
                         existingCartItem = p;
@@ -300,14 +286,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
-                // 2. Add the cart quantity + the new quantity, and check the absolute limit
                 if (currentCartQty + parsedQty > foundProduct.getCurrentQuantity()) {
                     int remainingAllowed = foundProduct.getCurrentQuantity() - currentCartQty;
                     Toast.makeText(MainActivity.this, "Not enough stock! You can only add " + remainingAllowed + " more.", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                // 3. Group the items or add a new row!
                 if (existingCartItem != null) {
                     existingCartItem.setCurrentQuantity(currentCartQty + parsedQty);
                 } else {
@@ -321,7 +305,8 @@ public class MainActivity extends AppCompatActivity {
                 etBarcode.setText("");
                 etQty.setText("");
             } else {
-                Toast.makeText(MainActivity.this, "Item not found in inventory!", Toast.LENGTH_SHORT).show();
+                // THE KANTO ALERT INTERCEPTOR
+                showItemNotFoundDialog(targetBarcode);
             }
         });
 
@@ -359,21 +344,18 @@ public class MainActivity extends AppCompatActivity {
             String deviceName = android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL;
 
             if (paymentMethod.equals("Utang")) {
-                // 1. Summon the new Custom Bottom Sheet!
                 com.google.android.material.bottomsheet.BottomSheetDialog utangDialog = new com.google.android.material.bottomsheet.BottomSheetDialog(MainActivity.this);
                 View sheetView = getLayoutInflater().inflate(R.layout.layout_checkout_utang_sheet, null);
 
                 android.widget.AutoCompleteTextView etNameInput = sheetView.findViewById(R.id.etUtangNameInput);
                 Button btnConfirmUtang = sheetView.findViewById(R.id.btnConfirmUtangCheckout);
 
-                // 2. Feed the Smart Search with existing debtors!
                 dbHelper.getCloudDebts(debtMap -> {
                     ArrayList<String> existingNames = new ArrayList<>(debtMap.keySet());
                     android.widget.ArrayAdapter<String> adapter2 = new android.widget.ArrayAdapter<>(MainActivity.this, android.R.layout.simple_dropdown_item_1line, existingNames);
                     etNameInput.setAdapter(adapter2);
                 });
 
-                // 3. The Confirm Button (with the Bouncer completely intact!)
                 btnConfirmUtang.setOnClickListener(v1 -> {
                     String debtorName = etNameInput.getText().toString().trim();
                     if (debtorName.isEmpty()) {
@@ -392,13 +374,11 @@ public class MainActivity extends AppCompatActivity {
                             if (isSaved && isDebtLogged) {
                                 Toast.makeText(MainActivity.this, "Items charged to " + debtorName + "'s Utang!", Toast.LENGTH_LONG).show();
                                 wipeCartClean();
-                                utangDialog.dismiss(); // Close the sheet!
+                                utangDialog.dismiss();
                             }
                         };
 
-                        // 3. THE BOUNCER LOGIC
                         if (projectedDebt >= 1000.0) {
-                            // Summon the Custom Warning Dialog!
                             android.app.Dialog warningDialog = new android.app.Dialog(MainActivity.this);
                             warningDialog.setContentView(R.layout.layout_dialog_credit_warning);
                             warningDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
@@ -407,7 +387,6 @@ public class MainActivity extends AppCompatActivity {
                             android.widget.Button btnApprove = warningDialog.findViewById(R.id.btnApproveAnyway);
                             android.widget.TextView btnReject = warningDialog.findViewById(R.id.btnRejectUtang);
 
-                            // The HTML String Parser (Matches Stitch's exact coloring!)
                             String htmlMessage = String.format("%s's current debt is <b>₱%.2f</b>.<br>Adding this transaction of <b>₱%.2f</b> will exceed their limit of <font color='#DC2626'><b>₱1000.00</b></font>.", debtorName, currentDebt, cartTotal);
                             tvMessage.setText(android.text.Html.fromHtml(htmlMessage, android.text.Html.FROM_HTML_MODE_LEGACY));
 
@@ -420,7 +399,6 @@ public class MainActivity extends AppCompatActivity {
 
                             warningDialog.show();
                         } else {
-                            // Safe! Under ₱1000. Process it normally.
                             executeCheckout.run();
                         }
                     });
@@ -429,7 +407,6 @@ public class MainActivity extends AppCompatActivity {
                 utangDialog.setContentView(sheetView);
                 utangDialog.show();
             }else {
-                // THE MISSING LOGIC: Process normal Cash and GCash payments!
                 boolean isSaved = dbHelper.saveTransaction(selectedPurse, paymentMethod, cartTotal, cashGiven, changeAmount, deviceName, checkoutCart);
                 if(isSaved){
                     Toast.makeText(MainActivity.this, "Checkout complete!", Toast.LENGTH_LONG).show();
@@ -442,14 +419,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        // KILL THE TIMER WHEN APP IS IN BACKGROUND
         idleHandler.removeCallbacks(idleRunnable);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // RESTART THE TIMER WHEN APP IS OPENED
         idleHandler.removeCallbacks(idleRunnable);
         idleHandler.postDelayed(idleRunnable, 15 * 60 * 1000);
 
@@ -483,7 +458,6 @@ public class MainActivity extends AppCompatActivity {
         finish();
     }
 
-
     private void recalculateGrandTotal() {
         cartTotal = 0.0;
         for (Product p : checkoutCart) {
@@ -497,7 +471,6 @@ public class MainActivity extends AppCompatActivity {
         com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
         View sheet = getLayoutInflater().inflate(R.layout.layout_bottom_sheet, null);
 
-        // Define Buttons
         Button btnHistory = sheet.findViewById(R.id.btnMenuHistory);
         Button btnUtang = sheet.findViewById(R.id.btnMenuUtang);
         Button btnInventory = sheet.findViewById(R.id.btnMenuInventory);
@@ -505,23 +478,19 @@ public class MainActivity extends AppCompatActivity {
         Button btnAdmin = sheet.findViewById(R.id.btnMenuAdmin);
         Button btnCheckout = sheet.findViewById(R.id.btnMenuCheckout);
 
-        // SECURE THE GATE: Check Admin Status from SharedPreferences
         android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
         boolean isAdmin = prefs.getBoolean("IsAdmin", false);
 
-        // Hide admin-only buttons if not admin
         if (!isAdmin) {
             btnInventory.setVisibility(View.GONE);
             btnGcash.setVisibility(View.GONE);
             btnAdmin.setVisibility(View.GONE);
         }
 
-        // Logic (Navigation)
         btnCheckout.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, MainActivity.class)); finish(); });
         btnHistory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, HistoryActivity.class)); finish(); });
         btnUtang.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, UtangActivity.class)); finish(); });
 
-        // Admin-only logic
         if (isAdmin) {
             btnInventory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, InventoryActivity.class)); finish(); });
             btnGcash.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, GCashActivity.class)); finish(); });
@@ -529,9 +498,48 @@ public class MainActivity extends AppCompatActivity {
         }
 
         dialog.setContentView(sheet);
-        // FORCE EXPAND & KILL DRAG (The Scroll Trap Fix)
         com.google.android.material.bottomsheet.BottomSheetBehavior behavior = dialog.getBehavior();
         behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
+        dialog.show();
+    }
+
+    // THE KANTO ALERT ENGINE
+    // THE KANTO ALERT ENGINE (FIXED TELEPORTER & TEXT)
+    // Notice we added "String missingBarcode" inside the parentheses!
+    private void showItemNotFoundDialog(String missingBarcode) {
+        android.app.Dialog dialog = new android.app.Dialog(this);
+        View sheetView = getLayoutInflater().inflate(R.layout.layout_kanto_alert, null);
+
+        ImageView imgIcon = sheetView.findViewById(R.id.imgAlertIcon);
+        TextView tvTitle = sheetView.findViewById(R.id.tvAlertTitle);
+        TextView tvMessage = sheetView.findViewById(R.id.tvAlertMessage);
+        Button btnCancel = sheetView.findViewById(R.id.btnAlertLeft);
+        Button btnCheckInventory = sheetView.findViewById(R.id.btnAlertRight);
+
+        imgIcon.setImageResource(R.drawable.ic_warning);
+        imgIcon.setColorFilter(android.graphics.Color.parseColor("#DC2626"));
+
+        tvTitle.setText("Item Not Found");
+        tvMessage.setText("This barcode is not in your system. Check Inventory or Add New Item?");
+
+        btnCancel.setText("Cancel");
+        btnCheckInventory.setText("Add to Inventory");
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnCheckInventory.setOnClickListener(v -> {
+            dialog.dismiss();
+            Intent intent = new Intent(MainActivity.this, InventoryActivity.class);
+            // THE FIX: Pack the EXACT missing barcode, not the global variable!
+            intent.putExtra("NEW_BARCODE", missingBarcode);
+            startActivity(intent);
+            finish();
+        });
+
+        dialog.setContentView(sheetView);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
         dialog.show();
     }
 }

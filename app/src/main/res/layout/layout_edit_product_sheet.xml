@@ -7,80 +7,77 @@
     android:orientation="vertical"
     android:paddingTop="12dp">
 
-    <View android:layout_width="40dp" android:layout_height="4dp" android:layout_gravity="center_horizontal" android:background="#CBD5E1" android:layout_marginBottom="16dp" />
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:background="#CBD5E1"
+        android:layout_marginBottom="16dp" />
 
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Edit Product" android:textAlignment="center" android:textColor="@color/kanto_text_head" android:textSize="22sp" android:textStyle="bold" android:layout_marginBottom="24dp" />
-
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="24dp" android:layout_marginBottom="16dp">
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="12dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Barcode" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
-            <EditText android:id="@+id/etEditBarcode" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_rounded_input" android:backgroundTint="#E8F0E3" android:paddingHorizontal="16dp" android:textColor="@color/kanto_text_head" android:textSize="14sp"/>
-        </LinearLayout>
-        <ImageView android:id="@+id/btnEditScan" android:layout_width="50dp" android:layout_height="50dp" android:layout_gravity="bottom" android:background="@drawable/bg_rounded_button" android:backgroundTint="#D1FAE5" android:src="@drawable/ic_barcodescanner" android:padding="12dp" app:tint="@color/kanto_primary" />
-    </LinearLayout>
-
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="24dp" android:layout_marginBottom="16dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Product Name" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
-        <EditText android:id="@+id/etEditName" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_rounded_input" android:backgroundTint="#E8F0E3" android:paddingHorizontal="16dp" android:textColor="@color/kanto_text_head" android:inputType="textCapWords" android:textSize="14sp"/>
-    </LinearLayout>
-
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="24dp" android:layout_marginBottom="16dp">
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="8dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Supplier Cost" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
-            <EditText android:id="@+id/etEditCost" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_rounded_input" android:backgroundTint="#E8F0E3" android:paddingHorizontal="16dp" android:textColor="@color/kanto_text_head" android:inputType="numberDecimal" android:textSize="14sp"/>
-        </LinearLayout>
-        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="8dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Selling Price" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
-            <EditText android:id="@+id/etEditSell" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_rounded_input" android:backgroundTint="#E8F0E3" android:paddingHorizontal="16dp" android:textColor="@color/kanto_text_head" android:inputType="numberDecimal" android:textStyle="bold" android:textSize="14sp"/>
-        </LinearLayout>
-    </LinearLayout>
-
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="24dp" android:layout_marginBottom="24dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Current Stock" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
-        <EditText android:id="@+id/etEditQty" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_rounded_input" android:backgroundTint="#E8F0E3" android:paddingHorizontal="16dp" android:textColor="@color/kanto_text_head" android:inputType="number" android:textSize="14sp"/>
-    </LinearLayout>
-
-    <LinearLayout
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingHorizontal="24dp"
-        android:layout_marginBottom="24dp">
+        android:text="Edit Product"
+        android:textAlignment="center"
+        android:textColor="@color/kanto_text_head"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Item Category"
-            android:textColor="@color/kanto_text_head"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="4dp"/>
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fadeScrollbars="false">
 
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="@drawable/bg_spinner_outline">
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-            <Spinner
-                android:id="@+id/spinnerCategory"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@android:color/transparent"
-                android:popupBackground="@color/white" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="24dp" android:layout_marginBottom="16dp">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="12dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Barcode" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                    <EditText android:id="@+id/etEditBarcode" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_rounded_input" android:backgroundTint="#E8F0E3" android:paddingHorizontal="16dp" android:textColor="@color/kanto_text_head" android:textSize="14sp"/>
+                </LinearLayout>
+                <ImageView android:id="@+id/btnEditScan" android:layout_width="50dp" android:layout_height="50dp" android:layout_gravity="bottom" android:background="@drawable/bg_rounded_button" android:backgroundTint="#D1FAE5" android:src="@drawable/ic_barcodescanner" android:padding="12dp" app:tint="@color/kanto_primary" />
+            </LinearLayout>
 
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:layout_marginEnd="12dp"
-                android:src="@drawable/ic_arrow_down"
-                app:tint="@color/kanto_primary"
-                android:importantForAccessibility="no"/>
-        </RelativeLayout>
-    </LinearLayout>
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="24dp" android:layout_marginBottom="24dp">
-        <Button android:id="@+id/btnEditDelete" android:layout_width="0dp" android:layout_height="60dp" android:layout_weight="0.8" android:layout_marginEnd="12dp" android:background="@drawable/bg_rounded_button" android:text="Delete" android:textColor="#DC2626" android:textSize="16sp" android:textStyle="bold" app:backgroundTint="#FCE8E6" />
-        <Button android:id="@+id/btnEditSave" android:layout_width="0dp" android:layout_height="60dp" android:layout_weight="1.2" android:background="@drawable/bg_rounded_button" android:text="Save Updates" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" app:backgroundTint="@color/kanto_primary" />
-    </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="24dp" android:layout_marginBottom="16dp" android:baselineAligned="false">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.5" android:orientation="vertical" android:layout_marginEnd="8dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Product Name" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                    <EditText android:id="@+id/etEditName" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_rounded_input" android:backgroundTint="#E8F0E3" android:paddingHorizontal="16dp" android:textColor="@color/kanto_text_head" android:inputType="textCapWords" android:textSize="14sp"/>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="8dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Qty (Stock)" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                    <EditText android:id="@+id/etEditQty" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_rounded_input" android:backgroundTint="#E8F0E3" android:paddingHorizontal="16dp" android:textColor="@color/kanto_text_head" android:inputType="number" android:textSize="14sp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="24dp" android:layout_marginBottom="16dp">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginEnd="8dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Supplier Cost" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                    <EditText android:id="@+id/etEditCost" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_rounded_input" android:backgroundTint="#E8F0E3" android:paddingHorizontal="16dp" android:textColor="@color/kanto_text_head" android:inputType="numberDecimal" android:textSize="14sp"/>
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="8dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Selling Price" android:textColor="#64748B" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                    <EditText android:id="@+id/etEditSell" android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_rounded_input" android:backgroundTint="#E8F0E3" android:paddingHorizontal="16dp" android:textColor="@color/kanto_text_head" android:inputType="numberDecimal" android:textStyle="bold" android:textSize="14sp"/>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="24dp" android:layout_marginBottom="24dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Item Category" android:textColor="@color/kanto_text_head" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="4dp"/>
+                <RelativeLayout android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_spinner_outline">
+                    <Spinner android:id="@+id/spinnerCategory" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@android:color/transparent" android:popupBackground="@color/white" />
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp" android:layout_alignParentEnd="true" android:layout_centerVertical="true" android:layout_marginEnd="12dp" android:src="@drawable/ic_arrow_down" app:tint="@color/kanto_primary" android:importantForAccessibility="no"/>
+                </RelativeLayout>
+            </LinearLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingHorizontal="24dp" android:layout_marginBottom="24dp">
+                <Button android:id="@+id/btnEditDelete" android:layout_width="0dp" android:layout_height="60dp" android:layout_weight="0.8" android:layout_marginEnd="12dp" android:background="@drawable/bg_rounded_button" android:text="Delete" android:textColor="#DC2626" android:textSize="16sp" android:textStyle="bold" app:backgroundTint="#FCE8E6" />
+                <Button android:id="@+id/btnEditSave" android:layout_width="0dp" android:layout_height="60dp" android:layout_weight="1.2" android:background="@drawable/bg_rounded_button" android:text="Save Updates" android:textColor="@color/white" android:textSize="16sp" android:textStyle="bold" app:backgroundTint="@color/kanto_primary" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 </LinearLayout>

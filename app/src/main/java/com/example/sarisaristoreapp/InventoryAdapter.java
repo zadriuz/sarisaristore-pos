@@ -1,213 +1,117 @@
 package com.example.sarisaristoreapp;
 
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.Spinner;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.sarisaristoreapp.models.Product;
 import java.util.ArrayList;
 
-public class InventoryAdapter extends RecyclerView.Adapter<InventoryAdapter.InventoryViewHolder> {
+public class InventoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private ArrayList<Product> productList;
+    private static final int TYPE_ITEM = 0;
+    private static final int TYPE_FOOTER = 1;
 
     public InventoryAdapter(ArrayList<Product> productList) {
         this.productList = productList;
     }
 
+    @Override
+    public int getItemViewType(int position) {
+        // If we reach the very end of the list, tell Android to load the Footer!
+        if (position == productList.size()) return TYPE_FOOTER;
+        return TYPE_ITEM;
+    }
+
     @NonNull
     @Override
-    public InventoryViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == TYPE_FOOTER) {
+            // THE DYNAMIC FOOTER ENGINE: Drawing the text purely in Java!
+            TextView footer = new TextView(parent.getContext());
+            footer.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            footer.setText("- End of List -");
+            footer.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            footer.setTextColor(android.graphics.Color.parseColor("#94A3B8"));
+            footer.setTextSize(15);
+            footer.setTypeface(null, Typeface.BOLD);
+
+            footer.setPadding(0, 32, 0, 100); // Gives it plenty of breathing room at the bottom
+            return new RecyclerView.ViewHolder(footer) {};
+        }
+
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_inventory, parent, false);
         return new InventoryViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull InventoryViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        // If it's the footer, do nothing. It's already drawn!
+        if (getItemViewType(position) == TYPE_FOOTER) return;
+
+        InventoryViewHolder itemHolder = (InventoryViewHolder) holder;
         Product currentItem = productList.get(position);
 
-        holder.tvName.setText(currentItem.getProductName());
-        holder.tvPrice.setText(String.format("₱%.2f", currentItem.getSellingPrice()));
+        itemHolder.tvName.setText(currentItem.getProductName());
+        itemHolder.tvPrice.setText(String.format("₱%.2f", currentItem.getSellingPrice()));
 
-        // --- SAFE CATEGORY DISPLAY ENGINE (This replaces the old barcode line!) ---
         String cat = currentItem.getCategory();
         if (cat == null || cat.trim().isEmpty()) {
-            holder.tvCategory.setText("UNCATEGORIZED");
-            holder.tvCategory.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FECACA"))); // Light Red
-            holder.tvCategory.setTextColor(android.graphics.Color.parseColor("#B91C1C"));
+            itemHolder.tvCategory.setText("UNCATEGORIZED");
+            itemHolder.tvCategory.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FECACA")));
+            itemHolder.tvCategory.setTextColor(android.graphics.Color.parseColor("#B91C1C"));
         } else {
-            holder.tvCategory.setText(cat.toUpperCase());
-            holder.tvCategory.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#E2E8F0"))); // Default Gray
-            holder.tvCategory.setTextColor(android.graphics.Color.parseColor("#475569"));
+            itemHolder.tvCategory.setText(cat.toUpperCase());
+            itemHolder.tvCategory.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#E2E8F0")));
+            itemHolder.tvCategory.setTextColor(android.graphics.Color.parseColor("#475569"));
         }
-        // --------------------------------------------------------------------------
 
         int stock = currentItem.getCurrentQuantity();
         if (stock <= 5) {
-            // Force Pale Red (#DC2626) for both stock AND price!
-            holder.tvStock.setTextColor(android.graphics.Color.parseColor("#DC2626"));
-            holder.tvPrice.setTextColor(android.graphics.Color.parseColor("#DC2626"));
-
+            itemHolder.tvStock.setTextColor(android.graphics.Color.parseColor("#DC2626"));
+            itemHolder.tvPrice.setTextColor(android.graphics.Color.parseColor("#DC2626"));
             if (stock <= 0) {
-                holder.tvStock.setText("OUT OF STOCK");
+                itemHolder.tvStock.setText("OUT OF STOCK");
             } else {
-                holder.tvStock.setText("LOW STOCK: " + stock);
+                itemHolder.tvStock.setText("LOW STOCK: " + stock);
             }
         } else {
-            // Default Kanto Mint colors
-            holder.tvStock.setTextColor(android.graphics.Color.parseColor("#64748B"));
-            holder.tvPrice.setTextColor(holder.btnEdit.getContext().getResources().getColor(R.color.kanto_primary));
-            holder.tvStock.setText("Stock: " + stock);
+            itemHolder.tvStock.setTextColor(android.graphics.Color.parseColor("#64748B"));
+            itemHolder.tvPrice.setTextColor(itemHolder.btnEdit.getContext().getResources().getColor(R.color.kanto_primary));
+            itemHolder.tvStock.setText("Stock: " + stock);
         }
 
-        // --- THE MASTER EDIT TRAPDOOR ---
-        // --- THE MASTER EDIT TRAPDOOR ---
-        holder.btnEdit.setOnClickListener(v -> {
-            com.google.android.material.bottomsheet.BottomSheetDialog editDialog = new com.google.android.material.bottomsheet.BottomSheetDialog(v.getContext());
-            View sheetView = LayoutInflater.from(v.getContext()).inflate(R.layout.layout_edit_product_sheet, null);
-
-            android.widget.EditText etBarcode = sheetView.findViewById(R.id.etEditBarcode);
-            android.widget.EditText etName = sheetView.findViewById(R.id.etEditName);
-            android.widget.EditText etCost = sheetView.findViewById(R.id.etEditCost);
-            android.widget.EditText etSell = sheetView.findViewById(R.id.etEditSell);
-            android.widget.EditText etQty = sheetView.findViewById(R.id.etEditQty);
-            ImageView btnScan = sheetView.findViewById(R.id.btnEditScan);
-            android.widget.Button btnDelete = sheetView.findViewById(R.id.btnEditDelete);
-            android.widget.Button btnSave = sheetView.findViewById(R.id.btnEditSave);
-
-            Spinner spinnerCat = sheetView.findViewById(R.id.spinnerCategory);
-            String[] categories = {"Tindahan", "Softdrinks", "Print"};
-
-            // 1. Use your custom SLIM layout for the closed box
-            android.widget.ArrayAdapter<String> catAdapter = new android.widget.ArrayAdapter<>(v.getContext(), R.layout.item_spinner_selected, categories);
-
-            // 2. Use your custom FAT layout for the dropdown list
-            catAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
-
-            spinnerCat.setAdapter(catAdapter);
-
-            // Pre-fill existing data!
-            etBarcode.setText(currentItem.getBarcode());
-            etName.setText(currentItem.getProductName());
-            etCost.setText(String.valueOf(currentItem.getCostPrice()));
-            etSell.setText(String.valueOf(currentItem.getSellingPrice()));
-            etQty.setText(String.valueOf(currentItem.getCurrentQuantity()));
-
-            // THE FIX: Pre-select the correct category in the dropdown!
-            if (currentItem.getCategory() != null) {
-                int spinnerPosition = catAdapter.getPosition(currentItem.getCategory());
-                if (spinnerPosition >= 0) {
-                    spinnerCat.setSelection(spinnerPosition);
-                }
+        itemHolder.btnEdit.setOnClickListener(v -> {
+            if (v.getContext() instanceof InventoryActivity) {
+                ((InventoryActivity) v.getContext()).openEditProductPanel(currentItem);
             }
-
-            // Wire the Scanner Hook!
-            btnScan.setOnClickListener(v1 -> {
-                // We ask the main Activity to launch the scanner for us
-                if (v.getContext() instanceof InventoryActivity) {
-                    ((InventoryActivity) v.getContext()).triggerEditScanner(etBarcode);
-                }
-            });
-
-            // Delete Logic with Custom UI Trapdoor
-            btnDelete.setOnClickListener(v1 -> {
-                android.app.Dialog customDialog = new android.app.Dialog(v.getContext());
-                customDialog.setContentView(R.layout.layout_alert_dialog);
-
-                // CRITICAL: Makes the background transparent so your rounded corners actually show!
-                if (customDialog.getWindow() != null) {
-                    customDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-                }
-
-                android.widget.TextView tvTitle = customDialog.findViewById(R.id.tvAlertTitle);
-                android.widget.TextView tvMessage = customDialog.findViewById(R.id.tvAlertMessage);
-                android.widget.Button btnCancel = customDialog.findViewById(R.id.btnAlertCancel);
-                android.widget.Button btnConfirm = customDialog.findViewById(R.id.btnAlertConfirm);
-
-                tvTitle.setText("Delete Item?");
-                tvMessage.setText("Are you sure you want to permanently delete " + currentItem.getProductName() + "? This cannot be undone.");
-                btnConfirm.setText("Delete");
-
-                btnCancel.setOnClickListener(view -> customDialog.dismiss());
-
-                btnConfirm.setOnClickListener(view -> {
-                    DatabaseHelper db = new DatabaseHelper(v.getContext());
-                    db.deleteProduct(currentItem.getBarcode());
-                    android.widget.Toast.makeText(v.getContext(), "Item Deleted!", android.widget.Toast.LENGTH_SHORT).show();
-
-                    int pos = holder.getAdapterPosition();
-                    productList.remove(pos);
-                    notifyItemRemoved(pos);
-
-                    customDialog.dismiss();
-                    editDialog.dismiss();
-                });
-
-                customDialog.show();
-            });
-
-            // Save Logic
-            btnSave.setOnClickListener(v1 -> {
-                String newName = etName.getText().toString();
-                double newCost = Double.parseDouble(etCost.getText().toString());
-                double newPrice = Double.parseDouble(etSell.getText().toString());
-                int newQty = Integer.parseInt(etQty.getText().toString());
-                String newBarcode = etBarcode.getText().toString();
-
-                currentItem.setProductName(newName);
-                currentItem.setCostPrice(newCost);
-                currentItem.setSellingPrice(newPrice);
-                currentItem.setCurrentQuantity(newQty);
-
-                // If they changed the barcode, we'd theoretically need to delete old & save new,
-                // but for now, updating the fields works for basic edits.
-                currentItem.setBarcode(newBarcode);
-
-                String selectedCategory = spinnerCat.getSelectedItem().toString();
-
-                // If updating an existing item:
-                currentItem.setCategory(selectedCategory);
-
-                // OR if making a new item, pass it to your constructor:
-                // Product newProduct = new Product(..., selectedCategory);
-
-                DatabaseHelper db = new DatabaseHelper(v.getContext());
-                db.addProduct(currentItem);
-
-                android.widget.Toast.makeText(v.getContext(), "Item Updated!", android.widget.Toast.LENGTH_SHORT).show();
-                notifyItemChanged(holder.getAdapterPosition());
-                editDialog.dismiss();
-            });
-
-            editDialog.setContentView(sheetView);
-            editDialog.show();
         });
     }
 
     @Override
     public int getItemCount() {
-        return productList.size();
+        // We add +1 mathematically to make room for the Footer!
+        return productList.size() + 1;
     }
 
-    // THE SEARCH ENGINE FILTER WIRING
     public void filterList(ArrayList<Product> filteredList) {
         this.productList = filteredList;
         notifyDataSetChanged();
     }
 
-    // THE PROPERLY STRUCTURED VIEWHOLDER
     public static class InventoryViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvPrice, tvStock, tvCategory; // Changed this!
+        TextView tvName, tvPrice, tvStock, tvCategory;
         ImageView btnEdit;
 
         public InventoryViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvCardName);
-            tvCategory = itemView.findViewById(R.id.tvCardCategory); // Changed this!
+            tvCategory = itemView.findViewById(R.id.tvCardCategory);
             tvPrice = itemView.findViewById(R.id.tvCardPrice);
             tvStock = itemView.findViewById(R.id.tvCardStock);
             btnEdit = itemView.findViewById(R.id.btnEditItem);
