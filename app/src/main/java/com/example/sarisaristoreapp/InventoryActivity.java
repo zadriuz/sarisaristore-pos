@@ -376,11 +376,22 @@ public class InventoryActivity extends AppCompatActivity {
         dbHelper.getAllProducts(new DatabaseHelper.InventoryStatus() {
             @Override
             public void onDataLoaded(HashMap<String, Product> inventoryMap) {
+
+
                 inventoryList.clear();
-                for(Product p : inventoryMap.values()){
-                    if (p.getBarcode() != null && !p.getBarcode().trim().isEmpty() && !p.getBarcode().equals("null")) {
-                        inventoryList.add(p);
+
+                // THE FIX: Loop through both the Key (Folder Name) and Value (Product Data)
+                for(java.util.Map.Entry<String, Product> entry : inventoryMap.entrySet()){
+                    Product p = entry.getValue();
+                    String nodeKey = entry.getKey();
+
+                    // If the product forgot its own barcode, force the folder name into it!
+                    if (p.getBarcode() == null || p.getBarcode().trim().isEmpty() || p.getBarcode().equals("null")) {
+                        p.setBarcode(nodeKey);
                     }
+
+                    // Now it is guaranteed to be valid. Add it to the visual list.
+                    inventoryList.add(p);
                 }
                 applyCurrentFilters();
             }

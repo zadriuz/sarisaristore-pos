@@ -168,8 +168,8 @@ public class GCashActivity extends AppCompatActivity {
             // Inject the GCash number into the receipt details!
             ArrayList<Product> gcashDetails = new ArrayList<>();
             // We pass it as a fake Product so the SQLite database saves it in the receipt items list
-            Product numberItem = new Product(0, 1, 0.0, finalTotal, "GCASH", "No: " + numberStr + " (Charge: ₱" + calculatedFee + ")", "GCash");
-
+            Product numberItem = new Product(0, 1, 0.0, finalTotal, "GCASH", "No: " + numberStr + " (Charge: ₱" + calculatedFee + ")", type); // Use the variable 'type' here!
+            gcashDetails.add(numberItem);
             // Now pass `gcashDetails` instead of `emptyItems` into your save method:
             // PASS THE RIGHT ARRAY!
             dbHelper.saveTransaction("GCash " + type, "GCash", finalTotal, finalTotal, 0.0, deviceName, gcashDetails);
@@ -199,6 +199,8 @@ public class GCashActivity extends AppCompatActivity {
 
         // Grab the current transaction type from the spinner
         String type = spinnerType.getSelectedItem().toString();
+
+
 
         if (type.equals("Buy Load")) {
             // FLAT FEE RULE: Always exactly 3 pesos regardless of amount

@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
     HashMap<String, Product> globalInventory = new HashMap<>();
     ArrayList<String> searchList = new ArrayList<>();
-    ArrayAdapter<String> searchAdapter;
+    ContainsArrayAdapter searchAdapter;
 
     Button btnAddItem, btnCheckout;
     EditText etBarcode, etQty, etCashRendered;
@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
         btnMenu = findViewById(R.id.btnMenu);
 
         AutoCompleteTextView etSmartSearch = findViewById(R.id.etBarcode);
-        searchAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, searchList);
+        searchAdapter = new ContainsArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, searchList);
         etSmartSearch.setAdapter(searchAdapter);
 
         String[] purses = {"Tindahan", "Softdrinks", "Print"};
@@ -434,7 +434,11 @@ public class MainActivity extends AppCompatActivity {
             for(Product p : currentInventory.values()){
                 searchList.add(p.getProductName() + " | " + p.getBarcode());
             }
-            searchAdapter.notifyDataSetChanged();
+
+            // THE FIX: Use the custom updateData method so the filter arrays refresh!
+            if (searchAdapter != null) {
+                searchAdapter.updateData(searchList);
+            }
         });
     }
 
