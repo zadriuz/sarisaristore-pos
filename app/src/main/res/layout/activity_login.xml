@@ -8,126 +8,93 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center_horizontal">
-
-        <ImageView
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-            android:layout_marginBottom="8dp"
-            android:src="@mipmap/ic_launcher" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Ate Edna's Mini Store"
-            android:textColor="@color/kanto_text_head"
-            android:textSize="26sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="32dp"/>
+        android:gravity="center_horizontal"
+        android:weightSum="10">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="4"
             android:orientation="vertical"
-            android:background="@drawable/bg_rounded_card"
-            android:padding="24dp"
-            android:elevation="3dp"
-            android:layout_marginHorizontal="8dp">
+            android:gravity="center">
 
-            <EditText
-                android:textCursorDrawable="@null"
-                android:id="@+id/etUsername"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_rounded_input"
-                android:drawableStart="@drawable/ic_user"
-                android:drawablePadding="12dp"
-                android:hint="Username"
-                android:inputType="textNoSuggestions"
-                android:textColor="@color/kanto_text_body"
-                android:textColorHint="@color/kanto_neutral"
-                android:layout_marginBottom="16dp"/>
+            <ImageView
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_marginBottom="16dp"
+                android:src="@mipmap/ic_launcher" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                app:hintEnabled="false"
-                app:passwordToggleEnabled="true"
-                app:passwordToggleTint="@color/kanto_primary">
+                android:text="Ate Edna's Mini Store"
+                android:textColor="@color/kanto_text_head"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="24dp"/>
 
-                <EditText
-                    android:textCursorDrawable="@null"
-                    android:id="@+id/etPassword"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_rounded_input"
-                    android:drawableStart="@drawable/ic_lock"
-                    android:drawablePadding="12dp"
-                    android:hint="Password"
-                    android:inputType="textPassword"
-                    android:maxLength="12"
-                    android:textColor="@color/kanto_text_body"
-                    android:textColorHint="@color/kanto_neutral"/>
-            </com.google.android.material.textfield.TextInputLayout>
-            <Button
-                android:id="@+id/btnLogin"
-                android:textColor="@color/white"
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_rounded_button"
-                android:text="Login"
-                app:backgroundTint="@color/kanto_primary"
-                app:icon="@drawable/ic_arrow_forward"
-                app:iconGravity="textEnd"
-                app:iconTint="@color/white"
+                android:text="Enter 4-Digit PIN"
+                android:textColor="#64748B"
+                android:textSize="14sp"
+                android:textStyle="bold"
                 android:layout_marginBottom="16dp"/>
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="16dp">
+                android:gravity="center">
 
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1"
-                    android:background="@color/kanto_neutral"
-                    android:alpha="0.3"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="OR"
-                    android:textColor="@color/kanto_neutral"
-                    android:textSize="12sp"
-                    android:layout_marginHorizontal="12dp"
-                    android:textStyle="bold"/>
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1"
-                    android:background="@color/kanto_neutral"
-                    android:alpha="0.3"/>
+                <ImageView android:id="@+id/dot1" android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/bg_pin_dot_empty" android:layout_marginHorizontal="8dp"/>
+                <ImageView android:id="@+id/dot2" android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/bg_pin_dot_empty" android:layout_marginHorizontal="8dp"/>
+                <ImageView android:id="@+id/dot3" android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/bg_pin_dot_empty" android:layout_marginHorizontal="8dp"/>
+                <ImageView android:id="@+id/dot4" android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/bg_pin_dot_empty" android:layout_marginHorizontal="8dp"/>
             </LinearLayout>
-
-            <Button
-                android:id="@+id/btnBiometric"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_rounded_button"
-                android:text="Admin Biometric Login"
-                android:textColor="@color/kanto_primary"
-                app:backgroundTint="@color/kanto_card"
-                app:icon="@drawable/ic_fingerprint"
-                app:iconGravity="textStart"
-                app:iconTint="@color/kanto_primary" />
         </LinearLayout>
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="6"
+            android:columnCount="3"
+            android:rowCount="4"
+            android:alignmentMode="alignBounds"
+            android:layout_marginHorizontal="16dp">
+
+            <Button android:id="@+id/btn1" style="@style/PinButton" android:text="1" />
+            <Button android:id="@+id/btn2" style="@style/PinButton" android:text="2" />
+            <Button android:id="@+id/btn3" style="@style/PinButton" android:text="3" />
+            <Button android:id="@+id/btn4" style="@style/PinButton" android:text="4" />
+            <Button android:id="@+id/btn5" style="@style/PinButton" android:text="5" />
+            <Button android:id="@+id/btn6" style="@style/PinButton" android:text="6" />
+            <Button android:id="@+id/btn7" style="@style/PinButton" android:text="7" />
+            <Button android:id="@+id/btn8" style="@style/PinButton" android:text="8" />
+            <Button android:id="@+id/btn9" style="@style/PinButton" android:text="9" />
+
+            <ImageButton
+                android:id="@+id/btnBiometric"
+                android:layout_width="0dp"
+                android:layout_height="80dp"
+                android:layout_columnWeight="1"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_fingerprint"
+                app:tint="@color/kanto_primary"/>
+
+            <Button android:id="@+id/btn0" style="@style/PinButton" android:text="0" />
+
+            <ImageButton
+                android:id="@+id/btnDelete"
+                android:layout_width="0dp"
+                android:layout_height="80dp"
+                android:layout_columnWeight="1"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_backspace"
+                />
+        </GridLayout>
     </LinearLayout>
 </RelativeLayout>

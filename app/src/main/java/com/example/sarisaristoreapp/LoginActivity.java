@@ -3,13 +3,14 @@ package com.example.sarisaristoreapp;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 
@@ -18,12 +19,12 @@ import java.util.concurrent.Executor;
 
 public class LoginActivity extends AppCompatActivity {
 
-    EditText etUsername, etPassword;
-    Button btnLogin, btnBiometric;
+    // Logic State
+    private String currentPin = "";
+    private ImageView[] dots = new ImageView[4];
 
-    // The Credentials Vault (Username -> Password)
-    HashMap<String, String> passwords = new HashMap<>();
-    // The Clearance Vault (Username -> Is Admin?)
+    // Vaults
+    HashMap<String, String> pinVault = new HashMap<>();
     HashMap<String, Boolean> adminRoles = new HashMap<>();
 
     @Override
@@ -31,93 +32,141 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // THE CONCRETE FLOOR: Prevent going back into the app after logout
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                finishAffinity(); // This completely kills the app
+                finishAffinity();
             }
         });
 
-        etUsername = findViewById(R.id.etUsername);
-        etPassword = findViewById(R.id.etPassword);
-        btnLogin = findViewById(R.id.btnLogin);
-        btnBiometric = findViewById(R.id.btnBiometric);
+        // --- THE NEW FAMILY PIN VAULT ---
+        pinVault.put("0609", "Darius"); adminRoles.put("Darius", true);
+        pinVault.put("0309", "Edna");   adminRoles.put("Edna", true);
+        pinVault.put("1204", "Frank");  adminRoles.put("Frank", true);
+        pinVault.put("0208", "Fourt");  adminRoles.put("Fourt", false);
+        pinVault.put("1108", "Euni");   adminRoles.put("Euni", false);
 
-        // Load Users
-        passwords.put("Fourt", "020813"); adminRoles.put("Fourt", false);
-        passwords.put("Euni", "110814");  adminRoles.put("Euni", false);
-        passwords.put("Edna", "030979");  adminRoles.put("Edna", true);
-        passwords.put("Frank", "120487"); adminRoles.put("Frank", true);
-        passwords.put("Darius", "060907"); adminRoles.put("Darius", true);
+        // Map Dots
+        dots[0] = findViewById(R.id.dot1);
+        dots[1] = findViewById(R.id.dot2);
+        dots[2] = findViewById(R.id.dot3);
+        dots[3] = findViewById(R.id.dot4);
 
-        // Standard Password Login
-        btnLogin.setOnClickListener(new View.OnClickListener() {
+        // Map Buttons
+        int[] buttonIds = {R.id.btn0, R.id.btn1, R.id.btn2, R.id.btn3, R.id.btn4, R.id.btn5, R.id.btn6, R.id.btn7, R.id.btn8, R.id.btn9};
+        for (int id : buttonIds) {
+            findViewById(id).setOnClickListener(v -> {
+                Button btn = (Button) v;
+                appendNumber(btn.getText().toString());
+            });
+        }
+
+        // Delete Button Logic
+        ImageButton btnDelete = findViewById(R.id.btnDelete);
+        btnDelete.setOnClickListener(v -> {
+            if (currentPin.length() > 0) {
+                currentPin = currentPin.substring(0, currentPin.length() - 1);
+                updateDots();
+            }
+        });
+
+        // Biometric Logic
+        ImageButton btnBiometric = findViewById(R.id.btnBiometric);
+        btnBiometric.setOnClickListener(v -> triggerBiometric());
+    }
+
+    // --- CORE ENGINE ---
+    private void appendNumber(String num) {
+        if (currentPin.length() < 4) {
+            currentPin += num;
+            updateDots();
+
+            // Auto-Verify when 4 digits are hit
+            if (currentPin.length() == 4) {
+                verifyPin();
+            }
+        }
+    }
+
+    private void updateDots() {
+        for (int i = 0; i < 4; i++) {
+            if (i < currentPin.length()) {
+                dots[i].setImageResource(R.drawable.bg_pin_dot_filled);
+            } else {
+                dots[i].setImageResource(R.drawable.bg_pin_dot_empty);
+            }
+        }
+    }
+
+    private void verifyPin() {
+        if (pinVault.containsKey(currentPin)) {
+            String activeUser = pinVault.get(currentPin);
+            boolean isAdmin = adminRoles.get(activeUser);
+
+            Toast.makeText(this, "Welcome, " + activeUser, Toast.LENGTH_SHORT).show();
+            grantAccess(activeUser, isAdmin);
+        } else {
+            Toast.makeText(this, "Invalid PIN", Toast.LENGTH_SHORT).show();
+            // Reset state on failure
+            currentPin = "";
+            updateDots();
+        }
+    }
+
+    private void triggerBiometric() {
+        // --- THE FINGERPRINT HARDWARE CHECKER ---
+        BiometricManager biometricManager = BiometricManager.from(this);
+        switch (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG | BiometricManager.Authenticators.DEVICE_CREDENTIAL)) {
+            case BiometricManager.BIOMETRIC_SUCCESS:
+                // Hardware is good, proceed to prompt!
+                break;
+            case BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE:
+                Toast.makeText(this, "No fingerprint scanner on this device.", Toast.LENGTH_SHORT).show();
+                return;
+            case BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE:
+                Toast.makeText(this, "Fingerprint scanner is currently unavailable.", Toast.LENGTH_SHORT).show();
+                return;
+            case BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED:
+                Toast.makeText(this, "No fingerprints enrolled. Please add one in your phone settings.", Toast.LENGTH_LONG).show();
+                return;
+        }
+
+        Executor executor = ContextCompat.getMainExecutor(this);
+        BiometricPrompt biometricPrompt = new BiometricPrompt(this, executor, new BiometricPrompt.AuthenticationCallback() {
             @Override
-            public void onClick(View v) {
-                String user = etUsername.getText().toString().trim();
-                String pass = etPassword.getText().toString().trim();
+            public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
+                super.onAuthenticationSucceeded(result);
+                grantAccess("Edna", true);
+            }
 
-                if (passwords.containsKey(user) && passwords.get(user).equals(pass)) {
-                    grantAccess(user, adminRoles.get(user));
-                } else {
-                    Toast.makeText(LoginActivity.this, "Invalid Credentials", Toast.LENGTH_SHORT).show();
+            @Override
+            public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
+                super.onAuthenticationError(errorCode, errString);
+                // Ignores the error if the user just pressed 'Cancel' manually
+                if (errorCode != BiometricPrompt.ERROR_USER_CANCELED && errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
+                    Toast.makeText(LoginActivity.this, "Biometric Error: " + errString, Toast.LENGTH_SHORT).show();
                 }
             }
         });
 
-        // Biometric Login Engine
-        btnBiometric.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String user = etUsername.getText().toString().trim();
+        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle("Admin Authentication")
+                .setSubtitle("Scan fingerprint to bypass PIN")
+                .setNegativeButtonText("Cancel")
+                .build();
 
-                // Ensure they typed a valid admin username first
-                if (!adminRoles.containsKey(user) || !adminRoles.get(user)) {
-                    Toast.makeText(LoginActivity.this, "Type an Admin username first to use Fingerprint!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                Executor executor = ContextCompat.getMainExecutor(LoginActivity.this);
-                BiometricPrompt biometricPrompt = new BiometricPrompt(LoginActivity.this, executor, new BiometricPrompt.AuthenticationCallback() {
-                    @Override
-                    public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
-                        super.onAuthenticationSucceeded(result);
-                        Toast.makeText(LoginActivity.this, "Fingerprint Accepted", Toast.LENGTH_SHORT).show();
-                        grantAccess(user, true); // Bypass password!
-                    }
-
-                    @Override
-                    public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
-                        super.onAuthenticationError(errorCode, errString);
-                        Toast.makeText(LoginActivity.this, "Biometric Error: " + errString, Toast.LENGTH_SHORT).show();
-                    }
-                });
-
-                BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
-                        .setTitle("Admin Authentication")
-                        .setSubtitle("Scan fingerprint to log in as " + user)
-                        .setNegativeButtonText("Cancel")
-                        .build();
-
-                biometricPrompt.authenticate(promptInfo);
-            }
-        });
+        biometricPrompt.authenticate(promptInfo);
     }
 
     private void grantAccess(String username, boolean isAdmin) {
-        // Save the active session to Android's memory
         SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("ActiveUser", username);
         editor.putBoolean("IsAdmin", isAdmin);
         editor.apply();
 
-        // Jump to the Cash Register
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
         startActivity(intent);
-
-        // Kill the login screen so they can't press 'Back' to get to it
         finish();
     }
 }
