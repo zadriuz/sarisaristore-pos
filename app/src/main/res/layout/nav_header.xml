@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white"
+    android:orientation="vertical"
+    android:paddingTop="40dp"
+    android:paddingBottom="20dp"
+    android:paddingHorizontal="20dp">
+
+    <ImageView
+        android:id="@+id/imgHeaderLogo"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:src="@drawable/ic_storefront" /> <TextView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="16dp"
+    android:text="Sari-Sari Store POS"
+    android:textColor="@color/kanto_text_head"
+    android:textSize="20sp"
+    android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvHeaderRole"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Cashier / Admin"
+        android:textColor="@color/kanto_primary"
+        android:textSize="14sp" />
+
+</LinearLayout>

@@ -30,7 +30,6 @@ public class DashboardActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
 
-        // TELEPORT BACK TO POS CHECKOUT
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -43,9 +42,7 @@ public class DashboardActivity extends AppCompatActivity {
 
         dbHelper = new DatabaseHelper(this);
 
-        // The Universal Info Trapdoor
         ImageView btnInfo = findViewById(R.id.btnInfo);
-
         if (btnInfo != null) {
             btnInfo.setOnClickListener(v -> {
                 android.app.Dialog infoDialog = new android.app.Dialog(this);
@@ -58,12 +55,9 @@ public class DashboardActivity extends AppCompatActivity {
                 android.widget.TextView tvMessage = infoDialog.findViewById(R.id.tvInfoMessage);
                 android.widget.Button btnGotIt = infoDialog.findViewById(R.id.btnInfoGotIt);
 
-                // --- CHANGE THIS TEXT FOR EACH ACTIVITY ---
                 tvMessage.setText("This is the Admin Dashboard. Track today's live revenue, monitor top-selling items, review total outstanding Utang, and officially close your shift.");
-                // ------------------------------------------
 
                 btnGotIt.setOnClickListener(view -> infoDialog.dismiss());
-
                 infoDialog.show();
             });
         }
@@ -73,17 +67,71 @@ public class DashboardActivity extends AppCompatActivity {
         tvDashTopQty = findViewById(R.id.tvDashTopQty);
         tvDashUtang = findViewById(R.id.tvDashUtang);
         salesLineChart = findViewById(R.id.salesLineChart);
-
         tvDashTrend = findViewById(R.id.tvDashTrend);
 
-        // 1. Menu Engine
+        // --- DRAWER ENGINE START ---
+        androidx.drawerlayout.widget.DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
+        com.google.android.material.navigation.NavigationView navView = findViewById(R.id.nav_view);
+
+        navView.setCheckedItem(R.id.nav_dashboard);
+
+        android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
+        String activeCashier = prefs.getString("ActiveUser", "Unknown");
+        boolean isAdmin = prefs.getBoolean("IsAdmin", false);
+
+        android.view.View headerView = navView.getHeaderView(0);
+        android.widget.TextView tvHeaderRole = headerView.findViewById(R.id.tvHeaderRole);
+        tvHeaderRole.setText(isAdmin ? activeCashier + " / Admin" : activeCashier + " / Cashier");
+
+        android.view.Menu navMenu = navView.getMenu();
+        if (!isAdmin) {
+            navMenu.findItem(R.id.nav_inventory).setVisible(false);
+            navMenu.findItem(R.id.nav_gcash).setVisible(false);
+            navMenu.findItem(R.id.nav_dashboard).setVisible(false);
+        }
+
+        navView.setNavigationItemSelectedListener(item -> {
+            int id = item.getItemId();
+
+            if (id == R.id.nav_checkout) {
+                startActivity(new android.content.Intent(this, MainActivity.class));
+                finish();
+            } else if (id == R.id.nav_history) {
+                startActivity(new android.content.Intent(this, HistoryActivity.class));
+                finish();
+            } else if (id == R.id.nav_utang) {
+                startActivity(new android.content.Intent(this, UtangActivity.class));
+                finish();
+            } else if (id == R.id.nav_inventory) {
+                startActivity(new android.content.Intent(this, InventoryActivity.class));
+                finish();
+            } else if (id == R.id.nav_gcash) {
+                startActivity(new android.content.Intent(this, GCashActivity.class));
+                finish();
+            } else if (id == R.id.nav_dashboard) {
+                drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
+            } else if (id == R.id.nav_logout) {
+                prefs.edit().clear().apply();
+                android.widget.Toast.makeText(this, "Logged out successfully", android.widget.Toast.LENGTH_SHORT).show();
+                startActivity(new android.content.Intent(this, LoginActivity.class));
+                finish();
+            }
+
+            drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
+            return true;
+        });
+
         ImageView btnMenu = findViewById(R.id.btnMenu);
+        if (btnMenu != null) {
+            btnMenu.setOnClickListener(v -> {
+                if (!drawerLayout.isDrawerOpen(androidx.core.view.GravityCompat.START)) {
+                    drawerLayout.openDrawer(androidx.core.view.GravityCompat.START);
+                }
+            });
+        }
+        // --- DRAWER ENGINE END ---
 
-        btnMenu.setOnClickListener(v -> showAdminMenu());
-
-        // 2. Action Buttons (Reconciliation!)
         Button btnReconciliation = findViewById(R.id.btnZReading);
-
         btnReconciliation.setOnClickListener(v -> {
             String todayRevenue = tvDashRevenue.getText().toString();
             String todayUtang = tvDashUtang.getText().toString();
@@ -101,19 +149,15 @@ public class DashboardActivity extends AppCompatActivity {
             android.widget.Button btnCancel = customDialog.findViewById(R.id.btnEndShiftCancel);
             android.widget.Button btnConfirm = customDialog.findViewById(R.id.btnEndShiftConfirm);
 
-            // Stamp the live math onto the custom UI
             tvCash.setText(todayRevenue);
-            tvGCash.setText("₱0.00"); // Set to 0.00 unless you separate GCash in your Dashboard math later
+            tvGCash.setText("₱0.00");
             tvUtang.setText(todayUtang);
 
             btnCancel.setOnClickListener(view -> customDialog.dismiss());
 
             btnConfirm.setOnClickListener(view -> {
                 Toast.makeText(this, "Shift Closed. Great job today!", Toast.LENGTH_SHORT).show();
-
-                android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
                 prefs.edit().putBoolean("IsAdmin", false).apply();
-
                 customDialog.dismiss();
                 finishAffinity();
             });
@@ -121,15 +165,12 @@ public class DashboardActivity extends AppCompatActivity {
             customDialog.show();
         });
 
-        // 3. Fetch the Live Analytics!
-        // 3. Fetch the Live Analytics!
         dbHelper.getDashboardStats((totalRevenue, totalUtang, topItem, topQty, dailySales) -> {
             tvDashRevenue.setText(String.format("₱%,.2f", totalRevenue));
             tvDashUtang.setText(String.format("₱%,.2f", totalUtang));
             tvDashTopItem.setText(topItem);
             tvDashTopQty.setText(topQty + " sold");
 
-            // --- THE TREND MATH ENGINE ---
             double thisWeekTotal = 0.0;
             double lastWeekTotal = 0.0;
             ArrayList<Double> allSales = new ArrayList<>(dailySales.values());
@@ -137,30 +178,29 @@ public class DashboardActivity extends AppCompatActivity {
 
             for (int i = 0; i < totalDays; i++) {
                 if (i >= totalDays - 7) {
-                    thisWeekTotal += allSales.get(i); // Last 7 days
+                    thisWeekTotal += allSales.get(i);
                 } else if (i >= totalDays - 14) {
-                    lastWeekTotal += allSales.get(i); // The 7 days before that
+                    lastWeekTotal += allSales.get(i);
                 }
             }
 
             if (lastWeekTotal == 0 && thisWeekTotal > 0) {
                 tvDashTrend.setText("↗ +100% vs last week");
-                tvDashTrend.setTextColor(android.graphics.Color.parseColor("#16A34A")); // Green
+                tvDashTrend.setTextColor(android.graphics.Color.parseColor("#16A34A"));
             } else if (lastWeekTotal == 0 && thisWeekTotal == 0) {
                 tvDashTrend.setText("0% vs last week");
-                tvDashTrend.setTextColor(android.graphics.Color.parseColor("#64748B")); // Gray
+                tvDashTrend.setTextColor(android.graphics.Color.parseColor("#64748B"));
             } else {
                 double percentChange = ((thisWeekTotal - lastWeekTotal) / lastWeekTotal) * 100;
                 if (percentChange >= 0) {
                     tvDashTrend.setText(String.format("↗ +%.1f%% vs last week", percentChange));
-                    tvDashTrend.setTextColor(android.graphics.Color.parseColor("#16A34A")); // Green
+                    tvDashTrend.setTextColor(android.graphics.Color.parseColor("#16A34A"));
                 } else {
                     tvDashTrend.setText(String.format("↘ %.1f%% vs last week", percentChange));
-                    tvDashTrend.setTextColor(android.graphics.Color.parseColor("#DC2626")); // Red
+                    tvDashTrend.setTextColor(android.graphics.Color.parseColor("#DC2626"));
                 }
             }
 
-            // Pass the live data directly into the graph!
             setupLineChart(dailySales);
         });
     }
@@ -173,7 +213,6 @@ public class DashboardActivity extends AppCompatActivity {
             entries.add(new Entry(0f, 0f));
             dateLabels.add("No Data");
         } else {
-            // We only want the last 7 days maximum!
             int startIndex = Math.max(0, dailySales.size() - 7);
             int currentIndex = 0;
             float xPos = 0f;
@@ -182,10 +221,9 @@ public class DashboardActivity extends AppCompatActivity {
                 if (currentIndex >= startIndex) {
                     entries.add(new Entry(xPos, entry.getValue().floatValue()));
 
-                    // BULLETPROOF LABEL PARSER
                     String label = entry.getKey();
                     if (label.equals("Unknown")) {
-                        label = "?"; // If no date exists, show a question mark instead of "known"
+                        label = "?";
                     } else if (label.length() > 5 && label.contains("-")) {
                         String[] parts = label.split("-");
                         if(parts.length >= 2) {
@@ -204,24 +242,20 @@ public class DashboardActivity extends AppCompatActivity {
         LineDataSet dataSet = new LineDataSet(entries, "Daily Revenue");
         dataSet.setColor(android.graphics.Color.parseColor("#37533C"));
         dataSet.setLineWidth(4f);
-        dataSet.setDrawCircles(true); // Let's turn circles ON so she can see the exact days!
+        dataSet.setDrawCircles(true);
         dataSet.setCircleColor(android.graphics.Color.parseColor("#37533C"));
-        // Push the text slightly further away from the line
         dataSet.setCircleRadius(5f);
 
-        // Turn the floating numbers ON!
         dataSet.setDrawValues(false);
         dataSet.setValueTextSize(10f);
         dataSet.setValueTextColor(android.graphics.Color.parseColor("#37533C"));
 
-        // Format the numbers to look like money with commas!
         dataSet.setValueFormatter(new com.github.mikephil.charting.formatter.ValueFormatter() {
             @Override
             public String getPointLabel(Entry entry) {
                 return String.format("₱%,.0f", entry.getY());
             }
         });
-
 
         dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);
         dataSet.setDrawFilled(true);
@@ -235,11 +269,9 @@ public class DashboardActivity extends AppCompatActivity {
         salesLineChart.getLegend().setEnabled(false);
         salesLineChart.getAxisRight().setEnabled(false);
 
-        // Add vertical breathing room to the chart!
         salesLineChart.getAxisLeft().setSpaceTop(30f);
         salesLineChart.getAxisLeft().setSpaceBottom(20f);
 
-        // Inject the custom date labels onto the X-Axis!
         com.github.mikephil.charting.components.XAxis xAxis = salesLineChart.getXAxis();
         xAxis.setPosition(com.github.mikephil.charting.components.XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
@@ -248,44 +280,5 @@ public class DashboardActivity extends AppCompatActivity {
 
         salesLineChart.animateX(1000);
         salesLineChart.invalidate();
-    }
-
-    private void showAdminMenu() {
-        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
-        View sheet = getLayoutInflater().inflate(R.layout.layout_bottom_sheet, null);
-
-        // Define buttons
-        Button btnHistory = sheet.findViewById(R.id.btnMenuHistory);
-        Button btnUtang = sheet.findViewById(R.id.btnMenuUtang);
-        Button btnInventory = sheet.findViewById(R.id.btnMenuInventory);
-        Button btnGcash = sheet.findViewById(R.id.btnMenuGcash);
-        Button btnAdmin = sheet.findViewById(R.id.btnMenuAdmin);
-        Button btnCheckout = sheet.findViewById(R.id.btnMenuCheckout);
-
-        // SECURE THE GATE: Check if the user is an admin
-        android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
-        boolean isAdmin = prefs.getBoolean("IsAdmin", false);
-
-        if (!isAdmin) {
-            btnInventory.setVisibility(View.GONE);
-            btnAdmin.setVisibility(View.GONE);
-            btnGcash.setVisibility(View.GONE);
-        }
-
-        // Logic (Navigation)
-        btnCheckout.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, MainActivity.class)); finish(); });
-        btnHistory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, HistoryActivity.class)); finish(); });
-        btnUtang.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, UtangActivity.class)); finish(); });
-
-        if (isAdmin) {
-            btnInventory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, InventoryActivity.class)); finish(); });
-            btnGcash.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, GCashActivity.class)); finish(); });
-            btnAdmin.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, DashboardActivity.class)); finish(); });
-        }
-
-        dialog.setContentView(sheet);
-        dialog.getBehavior().setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
-        dialog.getBehavior().setDraggable(false);
-        dialog.show();
     }
 }

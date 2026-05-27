@@ -1,307 +1,328 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/kanto_bg"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
+    <!-- CHILD 1: GCASH SCREEN -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/white"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="16dp"
-        android:elevation="4dp">
-
-        <ImageView
-            android:id="@+id/btnBack"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_menu"
-            android:rotation="180"
-            app:tint="@color/kanto_primary" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="GCash Services"
-            android:textAlignment="center"
-            android:textColor="@color/kanto_primary"
-            android:textSize="22sp"
-            android:textStyle="bold" />
-
-        <ImageView
-            android:id="@+id/btnInfo"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_info"
-            app:tint="@color/kanto_primary" />
-    </LinearLayout>
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="20dp"
-        android:scrollbars="none">
+        android:layout_height="match_parent"
+        android:background="@color/kanto_bg"
+        android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:background="@color/white"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:elevation="4dp">
+
+            <ImageView
+                android:id="@+id/btnMenu"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_menu"
+                app:tint="@color/kanto_primary" />
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Transaction Type"
-                android:textColor="@color/kanto_text_head"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:layout_weight="1"
+                android:text="GCash Services"
+                android:textAlignment="center"
+                android:textColor="@color/kanto_primary"
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="55dp"
-                android:layout_marginBottom="20dp"
-                android:background="@drawable/bg_spinner_outline"
-                >
+            <ImageView
+                android:id="@+id/btnInfo"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_info"
+                app:tint="@color/kanto_primary" />
+        </LinearLayout>
 
-                <Spinner
-                    android:id="@+id/spinnerType"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@android:color/transparent"
-                    android:popupBackground="@color/kanto_card"
-                    android:overlapAnchor="false"
-
-                    android:paddingStart="16dp"
-                    android:paddingEnd="48dp" />
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:layout_marginEnd="16dp"
-                    android:src="@drawable/ic_arrow_down"
-                    app:tint="@color/kanto_primary"
-                    android:clickable="false"
-                    android:focusable="false"
-                    android:importantForAccessibility="no"/>
-            </RelativeLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="GCash Number"
-                android:textColor="@color/kanto_text_head"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
-            <EditText
-                android:id="@+id/etGcashNumber"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-
-                android:background="@drawable/bg_input_focused"
-
-                android:hint="09xxxxxxxxx"
-                android:inputType="phone"
-                android:maxLength="11"
-                android:paddingHorizontal="16dp"
-                android:textColor="@color/black"
-                android:textSize="16sp"
-                android:layout_marginBottom="20dp"/>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Amount"
-                android:textColor="@color/kanto_text_head"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="20dp"
+            android:scrollbars="none">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="70dp"
-                android:background="@drawable/bg_input_focused"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-                android:addStatesFromChildren="true"
-
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="20dp"
-                android:layout_marginBottom="20dp">
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="₱ "
+                    android:text="Transaction Type"
                     android:textColor="@color/kanto_text_head"
-                    android:textSize="32sp"
-                    android:textStyle="bold" />
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="55dp"
+                    android:layout_marginBottom="20dp"
+                    android:background="@drawable/bg_spinner_outline"
+                    >
+
+                    <Spinner
+                        android:id="@+id/spinnerType"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@android:color/transparent"
+                        android:popupBackground="@color/kanto_card"
+                        android:overlapAnchor="false"
+
+                        android:paddingStart="16dp"
+                        android:paddingEnd="48dp" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:layout_marginEnd="16dp"
+                        android:src="@drawable/ic_arrow_down"
+                        app:tint="@color/kanto_primary"
+                        android:clickable="false"
+                        android:focusable="false"
+                        android:importantForAccessibility="no"/>
+                </RelativeLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="GCash Number"
+                    android:textColor="@color/kanto_text_head"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp"/>
 
                 <EditText
-                    android:id="@+id/etGcashAmount"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:background="@null"
-                    android:gravity="center_vertical|start"
-                    android:hint="0.00"
-                    android:inputType="numberDecimal"
-                    android:textColor="@color/kanto_text_head"
-                    android:textSize="32sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_card_rounded"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="20dp"
-                android:layout_marginBottom="20dp"
-                android:elevation="2dp">
+                    android:id="@+id/etGcashNumber"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
 
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:background="@drawable/bg_input_focused"
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Add Service Fee"
-                        android:textColor="@color/kanto_text_head"
-                        android:textStyle="bold"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Calculate and add standard fee"
-                        android:textColor="@color/kanto_text_head"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switchFee"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true"
-                    app:thumbTint="@color/selector_switch_thumb"
-                    app:trackTint="@color/selector_switch_track" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_card_rounded"
-                android:orientation="vertical"
-                android:padding="20dp"
-                android:elevation="2dp">
-
+                    android:hint="09xxxxxxxxx"
+                    android:inputType="phone"
+                    android:maxLength="11"
+                    android:paddingHorizontal="16dp"
+                    android:textColor="@color/black"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="20dp"/>
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Summary"
-                    android:textColor="@color/kanto_primary"
+                    android:text="Amount"
+                    android:textColor="@color/kanto_text_head"
+                    android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textSize="18sp"
-                    android:layout_marginBottom="16dp"/>
+                    android:layout_marginBottom="8dp"/>
 
-                <RelativeLayout
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="70dp"
+                    android:background="@drawable/bg_input_focused"
+
+                    android:addStatesFromChildren="true"
+
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="20dp"
+                    android:layout_marginBottom="20dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="₱ "
+                        android:textColor="@color/kanto_text_head"
+                        android:textSize="32sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/etGcashAmount"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@null"
+                        android:gravity="center_vertical|start"
+                        android:hint="0.00"
+                        android:inputType="numberDecimal"
+                        android:textColor="@color/kanto_text_head"
+                        android:textSize="32sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Transaction Fee"
-                        android:textColor="@color/kanto_primary" />
-                    <TextView
-                        android:id="@+id/tvFeeAmount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:text="₱0.00"
-                        android:textColor="@color/kanto_primary"
-                        android:textStyle="bold"/>
-                </RelativeLayout>
+                    android:background="@drawable/bg_card_rounded"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="20dp"
+                    android:layout_marginBottom="20dp"
+                    android:elevation="2dp">
 
-                <RelativeLayout
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Add Service Fee"
+                            android:textColor="@color/kanto_text_head"
+                            android:textStyle="bold"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Calculate and add standard fee"
+                            android:textColor="@color/kanto_text_head"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchFee"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        app:thumbTint="@color/selector_switch_thumb"
+                        app:trackTint="@color/selector_switch_track" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp">
-                    <TextView
-                        android:id="@+id/tvReceivesLabel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Customer Receives"
-                        android:textColor="@color/kanto_primary" />
-                    <TextView
-                        android:id="@+id/tvReceivesAmount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:text="₱0.00"
-                        android:textColor="@color/kanto_primary"
-                        android:textStyle="bold"/>
-                </RelativeLayout>
+                    android:background="@drawable/bg_card_rounded"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:elevation="2dp">
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/kanto_primary"
-                    android:layout_marginBottom="16dp"/>
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Total to Collect"
+                        android:text="Summary"
                         android:textColor="@color/kanto_primary"
                         android:textStyle="bold"
-                        android:textSize="16sp"/>
-                    <TextView
-                        android:id="@+id/tvTotalCollect"
-                        android:layout_width="wrap_content"
+                        android:textSize="18sp"
+                        android:layout_marginBottom="16dp"/>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:text="₱0.00"
-                        android:textColor="@color/kanto_primary"
-                        android:textSize="20sp"
-                        android:textStyle="bold"/>
-                </RelativeLayout>
+                        android:layout_marginBottom="12dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Transaction Fee"
+                            android:textColor="@color/kanto_primary" />
+                        <TextView
+                            android:id="@+id/tvFeeAmount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:text="₱0.00"
+                            android:textColor="@color/kanto_primary"
+                            android:textStyle="bold"/>
+                    </RelativeLayout>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp">
+                        <TextView
+                            android:id="@+id/tvReceivesLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Customer Receives"
+                            android:textColor="@color/kanto_primary" />
+                        <TextView
+                            android:id="@+id/tvReceivesAmount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:text="₱0.00"
+                            android:textColor="@color/kanto_primary"
+                            android:textStyle="bold"/>
+                    </RelativeLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/kanto_primary"
+                        android:layout_marginBottom="16dp"/>
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Total to Collect"
+                            android:textColor="@color/kanto_primary"
+                            android:textStyle="bold"
+                            android:textSize="16sp"/>
+                        <TextView
+                            android:id="@+id/tvTotalCollect"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:text="₱0.00"
+                            android:textColor="@color/kanto_primary"
+                            android:textSize="20sp"
+                            android:textStyle="bold"/>
+                    </RelativeLayout>
+
+                </LinearLayout>
 
             </LinearLayout>
+        </ScrollView>
 
-        </LinearLayout>
-    </ScrollView>
+        <Button
+            android:id="@+id/btnProcessGcash"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_rounded_button"
+            android:text="Process Transaction"
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/kanto_primary"
+            app:icon="@drawable/ic_receipt"
+            app:iconGravity="textStart"
+            app:iconTint="@color/white" />
 
-    <Button
-        android:id="@+id/btnProcessGcash"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginBottom="20dp"
-        android:background="@drawable/bg_rounded_button"
-        android:text="Process Transaction"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        app:backgroundTint="@color/kanto_primary"
-        app:icon="@drawable/ic_receipt"
-        app:iconGravity="textStart"
-        app:iconTint="@color/white" />
+    </LinearLayout>
 
-</LinearLayout>
+    <!-- CHILD 2: SIDEBAR -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/nav_view"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="@color/white"
+        app:headerLayout="@layout/nav_header"
+        app:menu="@menu/nav_menu"
+        app:itemBackground="@drawable/bg_nav_item"
+        app:itemIconTint="@color/nav_item_colors"
+        app:itemTextColor="@color/nav_item_colors" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

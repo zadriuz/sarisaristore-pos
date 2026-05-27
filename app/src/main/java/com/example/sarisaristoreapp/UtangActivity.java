@@ -29,12 +29,9 @@ public class UtangActivity extends AppCompatActivity {
     DatabaseHelper dbHelper;
     RecyclerView listUtang;
     TextView tvTotalUtang;
-    ImageView btnMenu;
     EditText etSearchNeighbor;
-
     UtangAdapter adapter;
 
-    // The Master Map holds ALL data. The Arrays hold only the SEARCHED data.
     LinkedHashMap<String, Double> masterDebtMap = new LinkedHashMap<>();
     ArrayList<String> neighborNames = new ArrayList<>();
     ArrayList<Double> neighborBalances = new ArrayList<>();
@@ -44,7 +41,6 @@ public class UtangActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_utang);
 
-        // TELEPORT BACK TO POS CHECKOUT
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -54,32 +50,77 @@ public class UtangActivity extends AppCompatActivity {
         });
 
         getWindow().setStatusBarColor(getResources().getColor(R.color.kanto_primary));
-
         dbHelper = new DatabaseHelper(this);
+
+        // --- DRAWER ENGINE START ---
+        androidx.drawerlayout.widget.DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
+        com.google.android.material.navigation.NavigationView navView = findViewById(R.id.nav_view);
+
+        navView.setCheckedItem(R.id.nav_utang);
+
+        android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
+        String activeCashier = prefs.getString("ActiveUser", "Unknown");
+        boolean isAdmin = prefs.getBoolean("IsAdmin", false);
+
+        android.view.View headerView = navView.getHeaderView(0);
+        android.widget.TextView tvHeaderRole = headerView.findViewById(R.id.tvHeaderRole);
+        tvHeaderRole.setText(isAdmin ? activeCashier + " / Admin" : activeCashier + " / Cashier");
+
+        android.view.Menu navMenu = navView.getMenu();
+        if (!isAdmin) {
+            navMenu.findItem(R.id.nav_inventory).setVisible(false);
+            navMenu.findItem(R.id.nav_gcash).setVisible(false);
+            navMenu.findItem(R.id.nav_dashboard).setVisible(false);
+        }
+
+        navView.setNavigationItemSelectedListener(item -> {
+            int id = item.getItemId();
+
+            if (id == R.id.nav_checkout) {
+                startActivity(new Intent(this, MainActivity.class)); finish();
+            } else if (id == R.id.nav_history) {
+                startActivity(new Intent(this, HistoryActivity.class)); finish();
+            } else if (id == R.id.nav_utang) {
+                drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
+            } else if (id == R.id.nav_inventory) {
+                startActivity(new Intent(this, InventoryActivity.class)); finish();
+            } else if (id == R.id.nav_gcash) {
+                startActivity(new Intent(this, GCashActivity.class)); finish();
+            } else if (id == R.id.nav_dashboard) {
+                startActivity(new Intent(this, DashboardActivity.class)); finish();
+            } else if (id == R.id.nav_logout) {
+                prefs.edit().clear().apply();
+                Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, LoginActivity.class)); finish();
+            }
+            drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
+            return true;
+        });
+
+        ImageView btnMenu = findViewById(R.id.btnMenu);
+        if (btnMenu != null) {
+            btnMenu.setOnClickListener(v -> {
+                if (!drawerLayout.isDrawerOpen(androidx.core.view.GravityCompat.START)) {
+                    drawerLayout.openDrawer(androidx.core.view.GravityCompat.START);
+                }
+            });
+        }
+        // --- DRAWER ENGINE END ---
+
         listUtang = findViewById(R.id.listUtang);
         tvTotalUtang = findViewById(R.id.tvTotalUtang);
-        btnMenu = findViewById(R.id.btnMenu);
         etSearchNeighbor = findViewById(R.id.etSearchNeighbor);
 
-        // The Universal Info Trapdoor
         ImageView btnInfo = findViewById(R.id.btnInfo);
-
         if (btnInfo != null) {
             btnInfo.setOnClickListener(v -> {
                 android.app.Dialog infoDialog = new android.app.Dialog(this);
                 infoDialog.setContentView(R.layout.layout_info_dialog);
-
-                if (infoDialog.getWindow() != null) {
-                    infoDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-                }
-
-                android.widget.TextView tvMessage = infoDialog.findViewById(R.id.tvInfoMessage);
-                android.widget.Button btnGotIt = infoDialog.findViewById(R.id.btnInfoGotIt);
-
+                if (infoDialog.getWindow() != null) infoDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                TextView tvMessage = infoDialog.findViewById(R.id.tvInfoMessage);
+                Button btnGotIt = infoDialog.findViewById(R.id.btnInfoGotIt);
                 tvMessage.setText("This is the Utang ledger. Track neighbor debts, record partial or full payments, and view borrowing history to manage the store's credit.");
-
                 btnGotIt.setOnClickListener(view -> infoDialog.dismiss());
-
                 infoDialog.show();
             });
         }
@@ -108,9 +149,6 @@ public class UtangActivity extends AppCompatActivity {
                     ImageButton btnClose = sheetView.findViewById(R.id.btnCloseStatement);
                     Button btnSettle = sheetView.findViewById(R.id.btnSettleStatement);
 
-                    android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
-                    boolean isAdmin = prefs.getBoolean("IsAdmin", false);
-
                     if (!isAdmin) {
                         btnSettle.setVisibility(View.GONE);
                     }
@@ -127,46 +165,29 @@ public class UtangActivity extends AppCompatActivity {
                     });
 
                     statementDialog.setContentView(sheetView);
-
-                    if (statementDialog.getWindow() != null) {
-                        statementDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-                    }
-
+                    if (statementDialog.getWindow() != null) statementDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
                     statementDialog.show();
                 });
             }
 
             @Override
             public void onSettleDebt(String targetNeighbor, double currentBalance) {
-                android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
-                boolean isAdmin = prefs.getBoolean("IsAdmin", false);
-
                 if (!isAdmin) {
                     Toast.makeText(UtangActivity.this, "Action restricted to Admins", Toast.LENGTH_SHORT).show();
                     return;
                 }
-
                 showPaymentInput(targetNeighbor, currentBalance);
             }
         });
 
         listUtang.setAdapter(adapter);
-
         loadUtangData();
 
         etSearchNeighbor.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override
-            public void afterTextChanged(android.text.Editable s) {
-                filterList(s.toString());
-            }
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(android.text.Editable s) { filterList(s.toString()); }
         });
-
-        btnMenu.setOnClickListener(v -> showAdminMenu());
-
     }
 
     private void loadUtangData() {
@@ -228,8 +249,6 @@ public class UtangActivity extends AppCompatActivity {
             etAmount.setText(String.valueOf(current + 500));
         });
 
-        btnMenu.setOnClickListener(v -> showAdminMenu());
-
         btnConfirm.setOnClickListener(v -> {
             String paymentStr = etAmount.getText().toString().trim();
             if (paymentStr.isEmpty()) {
@@ -244,7 +263,6 @@ public class UtangActivity extends AppCompatActivity {
                 return;
             }
 
-            // --- GEMINI'S REVISED OVERPAYMENT ENGINE ---
             double settleAmount;
             double change = 0.0;
             String transactionTitle = "Utang Payment (" + targetNeighbor + ")";
@@ -257,28 +275,19 @@ public class UtangActivity extends AppCompatActivity {
                 settleAmount = paymentAmount;
             }
 
-            // THE FIX 1: This ensures remaining balance hits exactly 0.00 on overpayments
             double remainingBalance = currentBalance - settleAmount;
-
             ArrayList<Product> paymentDetails = new ArrayList<>();
 
-            // Log the actual debt being erased
             Product dummyPayment = new Product(0, 1, 0.0, settleAmount, "UTANG_PAYMENT", "Payment from " + targetNeighbor, "Utang");
             paymentDetails.add(dummyPayment);
 
-            // Log the change dynamically deducted from the Tindahan purse
             if (change > 0) {
                 Product changeDeduction = new Product(0, 1, 0.0, -change, "CHANGE_DISPENSED", "Change deducted from Tindahan", "Cash");
                 paymentDetails.add(changeDeduction);
             }
 
             String deviceName = android.os.Build.MANUFACTURER + " " + android.os.Build.MODEL;
-
-            // THE FIX 2: Pass paymentAmount (Cash), currentBalance (Total Debt), and remainingBalance (0.00)
-            // THE PERFECT MAPPING: Original Debt | Cash Given | Remaining Balance
             dbHelper.saveTransaction(transactionTitle, "Cash", currentBalance, paymentAmount, remainingBalance, deviceName, paymentDetails);
-
-            // Only reduce the Utang by the exact debt amount, preventing negative balances
             dbHelper.logDebt(targetNeighbor, -settleAmount);
 
             if (change > 0) {
@@ -286,7 +295,6 @@ public class UtangActivity extends AppCompatActivity {
             } else {
                 Toast.makeText(UtangActivity.this, "Payment of ₱" + String.format("%.2f", settleAmount) + " logged!", Toast.LENGTH_SHORT).show();
             }
-            // --- END OF ENGINE ---
 
             etSearchNeighbor.setText("");
             loadUtangData();
@@ -295,41 +303,5 @@ public class UtangActivity extends AppCompatActivity {
 
         paymentDialog.setContentView(sheetView);
         paymentDialog.show();
-    }
-
-    private void showAdminMenu() {
-        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
-        View sheet = getLayoutInflater().inflate(R.layout.layout_bottom_sheet, null);
-
-        Button btnHistory = sheet.findViewById(R.id.btnMenuHistory);
-        Button btnUtang = sheet.findViewById(R.id.btnMenuUtang);
-        Button btnInventory = sheet.findViewById(R.id.btnMenuInventory);
-        Button btnGcash = sheet.findViewById(R.id.btnMenuGcash);
-        Button btnAdmin = sheet.findViewById(R.id.btnMenuAdmin);
-        Button btnCheckout = sheet.findViewById(R.id.btnMenuCheckout);
-
-        android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
-        boolean isAdmin = prefs.getBoolean("IsAdmin", false);
-
-        if (!isAdmin) {
-            btnInventory.setVisibility(View.GONE);
-            btnGcash.setVisibility(View.GONE);
-            btnAdmin.setVisibility(View.GONE);
-        }
-
-        btnCheckout.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, MainActivity.class)); finish(); });
-        btnHistory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, HistoryActivity.class)); finish(); });
-        btnUtang.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, UtangActivity.class)); finish(); });
-
-        if (isAdmin) {
-            btnInventory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, InventoryActivity.class)); finish(); });
-            btnGcash.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, GCashActivity.class)); finish(); });
-            btnAdmin.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, DashboardActivity.class)); });
-        }
-
-        dialog.setContentView(sheet);
-        com.google.android.material.bottomsheet.BottomSheetBehavior behavior = dialog.getBehavior();
-        behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
-        dialog.show();
     }
 }

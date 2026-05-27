@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_checkout"
+            android:icon="@drawable/ic_pos"
+            android:title="POS / Checkout" />
+        <item
+            android:id="@+id/nav_history"
+            android:icon="@drawable/ic_receipt"
+            android:title="Transaction History" />
+        <item
+            android:id="@+id/nav_utang"
+            android:icon="@drawable/ic_debt"
+            android:title="Utang" />
+        <item
+            android:id="@+id/nav_inventory"
+            android:icon="@drawable/ic_inventory"
+            android:title="Inventory" />
+        <item
+            android:id="@+id/nav_gcash"
+            android:icon="@drawable/ic_gcash"
+            android:title="GCash Services" />
+        <item
+            android:id="@+id/nav_dashboard"
+            android:icon="@drawable/ic_dashboard"
+            android:title="Admin Dashboard" />
+    </group>
+
+    <item
+        android:id="@+id/nav_logout"
+        android:icon="@drawable/ic_logout"
+        android:title="Log out" />
+</menu>

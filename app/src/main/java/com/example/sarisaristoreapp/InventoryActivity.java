@@ -34,18 +34,14 @@ public class InventoryActivity extends AppCompatActivity {
     InventoryAdapter inventoryAdapter;
 
     private EditText currentBarcodeTarget;
-    // We track the open Add Sheet so we can forcefully close it if they switch to Edit mode!
     private com.google.android.material.bottomsheet.BottomSheetDialog activeAddSheet = null;
 
-    // THE CATCHER'S MITT for Inventory
     private final androidx.activity.result.ActivityResultLauncher<com.journeyapps.barcodescanner.ScanOptions> inventoryBarcodeLauncher =
             registerForActivityResult(new com.journeyapps.barcodescanner.ScanContract(), result -> {
                 if(result.getContents() == null) {
                     Toast.makeText(InventoryActivity.this, "Scan cancelled", Toast.LENGTH_SHORT).show();
                 } else {
                     String scannedCode = result.getContents();
-
-                    // 1. CHECK IF THE BARCODE ALREADY EXISTS IN INVENTORY
                     Product existingProduct = null;
                     for (Product p : inventoryList) {
                         if (p.getBarcode() != null && p.getBarcode().equals(scannedCode)) {
@@ -54,11 +50,9 @@ public class InventoryActivity extends AppCompatActivity {
                         }
                     }
 
-                    // 2. IF IT EXISTS, TRIGGER THE ALERT
                     if (existingProduct != null) {
                         showProductExistsDialog(existingProduct);
                     }
-                    // 3. IF IT IS NEW, JUST PUT IT IN THE BOX
                     else if (currentBarcodeTarget != null) {
                         currentBarcodeTarget.setText(scannedCode);
                     }
@@ -82,14 +76,67 @@ public class InventoryActivity extends AppCompatActivity {
         getWindow().setStatusBarColor(getResources().getColor(R.color.kanto_primary));
         dbHelper = new DatabaseHelper(this);
 
+        // --- DRAWER ENGINE START ---
+        androidx.drawerlayout.widget.DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
+        com.google.android.material.navigation.NavigationView navView = findViewById(R.id.nav_view);
+
+        navView.setCheckedItem(R.id.nav_inventory);
+
+        android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
+        String activeCashier = prefs.getString("ActiveUser", "Unknown");
+        boolean isAdmin = prefs.getBoolean("IsAdmin", false);
+
+        android.view.View headerView = navView.getHeaderView(0);
+        android.widget.TextView tvHeaderRole = headerView.findViewById(R.id.tvHeaderRole);
+        tvHeaderRole.setText(isAdmin ? activeCashier + " / Admin" : activeCashier + " / Cashier");
+
+        android.view.Menu navMenu = navView.getMenu();
+        if (!isAdmin) {
+            navMenu.findItem(R.id.nav_inventory).setVisible(false);
+            navMenu.findItem(R.id.nav_gcash).setVisible(false);
+            navMenu.findItem(R.id.nav_dashboard).setVisible(false);
+        }
+
+        navView.setNavigationItemSelectedListener(item -> {
+            int id = item.getItemId();
+
+            if (id == R.id.nav_checkout) {
+                startActivity(new Intent(this, MainActivity.class)); finish();
+            } else if (id == R.id.nav_history) {
+                startActivity(new Intent(this, HistoryActivity.class)); finish();
+            } else if (id == R.id.nav_utang) {
+                startActivity(new Intent(this, UtangActivity.class)); finish();
+            } else if (id == R.id.nav_inventory) {
+                drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
+            } else if (id == R.id.nav_gcash) {
+                startActivity(new Intent(this, GCashActivity.class)); finish();
+            } else if (id == R.id.nav_dashboard) {
+                startActivity(new Intent(this, DashboardActivity.class)); finish();
+            } else if (id == R.id.nav_logout) {
+                prefs.edit().clear().apply();
+                Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, LoginActivity.class)); finish();
+            }
+            drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
+            return true;
+        });
+
+        ImageView btnMenu = findViewById(R.id.btnMenu);
+        if (btnMenu != null) {
+            btnMenu.setOnClickListener(v -> {
+                if (!drawerLayout.isDrawerOpen(androidx.core.view.GravityCompat.START)) {
+                    drawerLayout.openDrawer(androidx.core.view.GravityCompat.START);
+                }
+            });
+        }
+        // --- DRAWER ENGINE END ---
+
         ImageView btnInfo = findViewById(R.id.btnInfo);
         if (btnInfo != null) {
             btnInfo.setOnClickListener(v -> {
                 android.app.Dialog infoDialog = new android.app.Dialog(this);
                 infoDialog.setContentView(R.layout.layout_info_dialog);
-                if (infoDialog.getWindow() != null) {
-                    infoDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-                }
+                if (infoDialog.getWindow() != null) infoDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
                 TextView tvMessage = infoDialog.findViewById(R.id.tvInfoMessage);
                 Button btnGotIt = infoDialog.findViewById(R.id.btnInfoGotIt);
                 tvMessage.setText("This is your store's active inventory. Add new products, update prices, adjust stock levels, and delete discontinued items to keep your database accurate.");
@@ -123,24 +170,16 @@ public class InventoryActivity extends AppCompatActivity {
 
         EditText etSearch = findViewById(R.id.etSearchInventory);
         etSearch.addTextChangedListener(new android.text.TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override
-            public void afterTextChanged(android.text.Editable s) {
-                applyCurrentFilters();
-            }
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(android.text.Editable s) { applyCurrentFilters(); }
         });
-
-        ImageView btnMenu = findViewById(R.id.btnMenu);
-        btnMenu.setOnClickListener(v -> showAdminMenu());
 
         android.widget.RadioGroup radioGroupCategory = findViewById(R.id.radioGroupCategory);
         radioGroupCategory.setOnCheckedChangeListener((group, checkedId) -> applyCurrentFilters());
 
         ImageView btnAdd = findViewById(R.id.btnAddNewItemUI);
-        btnAdd.setOnClickListener(v -> showAddProductSheet(null)); // Pass null for standard click
+        btnAdd.setOnClickListener(v -> showAddProductSheet(null));
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -148,15 +187,12 @@ public class InventoryActivity extends AppCompatActivity {
             return insets;
         });
 
-        // --- THE TELEPORTER RECEIVER ---
-        // If MainActivity sent us a barcode, we instantly open the Add panel!
         String incomingBarcode = getIntent().getStringExtra("NEW_BARCODE");
         if (incomingBarcode != null && !incomingBarcode.isEmpty()) {
             showAddProductSheet(incomingBarcode);
         }
     }
 
-    // --- THE ADD PRODUCT ENGINE ---
     private void showAddProductSheet(String prefillBarcode) {
         activeAddSheet = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
         View sheetView = getLayoutInflater().inflate(R.layout.layout_add_product_sheet, null);
@@ -175,7 +211,6 @@ public class InventoryActivity extends AppCompatActivity {
         catAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
         spinnerCat.setAdapter(catAdapter);
 
-        // If the Teleporter brought a barcode, plug it in immediately!
         if (prefillBarcode != null && !prefillBarcode.isEmpty()) {
             etSheetBarcode.setText(prefillBarcode);
         }
@@ -224,21 +259,18 @@ public class InventoryActivity extends AppCompatActivity {
         activeAddSheet.setContentView(sheetView);
         activeAddSheet.show();
 
-        // FORCE FULL EXPAND AFTER SHOWING
         com.google.android.material.bottomsheet.BottomSheetBehavior behavior = activeAddSheet.getBehavior();
         behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
     }
 
-    // --- THE EDIT PRODUCT ENGINE (Moved here from the Adapter!) ---
     public void openEditProductPanel(Product currentItem) {
         com.google.android.material.bottomsheet.BottomSheetDialog editDialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
 
-        // Inject right under: activeAddSheet = new BottomSheetDialog(this);
-        activeAddSheet.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        if (activeAddSheet != null && activeAddSheet.getWindow() != null) {
+            activeAddSheet.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
 
-// Inject right under: BottomSheetDialog editDialog = new BottomSheetDialog(this);
         editDialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-
         View sheetView = getLayoutInflater().inflate(R.layout.layout_edit_product_sheet, null);
 
         EditText etBarcode = sheetView.findViewById(R.id.etEditBarcode);
@@ -256,7 +288,6 @@ public class InventoryActivity extends AppCompatActivity {
         catAdapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
         spinnerCat.setAdapter(catAdapter);
 
-        // Pre-fill existing data!
         etBarcode.setText(currentItem.getBarcode());
         etName.setText(currentItem.getProductName());
         etCost.setText(String.valueOf(currentItem.getCostPrice()));
@@ -275,9 +306,7 @@ public class InventoryActivity extends AppCompatActivity {
         btnDelete.setOnClickListener(v1 -> {
             android.app.Dialog customDialog = new android.app.Dialog(this);
             customDialog.setContentView(R.layout.layout_alert_dialog);
-            if (customDialog.getWindow() != null) {
-                customDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-            }
+            if (customDialog.getWindow() != null) customDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
 
             TextView tvTitle = customDialog.findViewById(R.id.tvAlertTitle);
             TextView tvMessage = customDialog.findViewById(R.id.tvAlertMessage);
@@ -292,7 +321,7 @@ public class InventoryActivity extends AppCompatActivity {
             btnConfirm.setOnClickListener(view -> {
                 dbHelper.deleteProduct(currentItem.getBarcode());
                 Toast.makeText(this, "Item Deleted!", Toast.LENGTH_SHORT).show();
-                refreshInventoryList(); // Reloads the list
+                refreshInventoryList();
                 customDialog.dismiss();
                 editDialog.dismiss();
             });
@@ -318,7 +347,7 @@ public class InventoryActivity extends AppCompatActivity {
             currentItem.setBarcode(newBarcode);
             currentItem.setCategory(spinnerCat.getSelectedItem().toString());
 
-            dbHelper.addProduct(currentItem); // Upsert logic
+            dbHelper.addProduct(currentItem);
             Toast.makeText(this, "Item Updated!", Toast.LENGTH_SHORT).show();
             refreshInventoryList();
             editDialog.dismiss();
@@ -327,7 +356,6 @@ public class InventoryActivity extends AppCompatActivity {
         editDialog.setContentView(sheetView);
         editDialog.show();
 
-        // FORCE FULL EXPAND AFTER SHOWING
         com.google.android.material.bottomsheet.BottomSheetBehavior behavior = editDialog.getBehavior();
         behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
     }
@@ -348,27 +376,21 @@ public class InventoryActivity extends AppCompatActivity {
         tvTitle.setText("Product Exists");
         tvMessage.setText("This item (" + existingProduct.getProductName() + ") is already in your inventory. Do you want to pull its existing information to update it?");
 
-        btnCancel.setText("Cancel"); // Requested text change
+        btnCancel.setText("Cancel");
         btnUpdate.setText("Update Item");
 
         btnCancel.setOnClickListener(v -> dialog.dismiss());
 
         btnUpdate.setOnClickListener(v -> {
             dialog.dismiss();
-
-            // IF THE ADD SHEET IS OPEN IN THE BACKGROUND, KILL IT!
             if (activeAddSheet != null && activeAddSheet.isShowing()) {
                 activeAddSheet.dismiss();
             }
-
-            // TELEPORT TO THE EDIT PANEL
             openEditProductPanel(existingProduct);
         });
 
         dialog.setContentView(sheetView);
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-        }
+        if (dialog.getWindow() != null) dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         dialog.show();
     }
 
@@ -376,21 +398,13 @@ public class InventoryActivity extends AppCompatActivity {
         dbHelper.getAllProducts(new DatabaseHelper.InventoryStatus() {
             @Override
             public void onDataLoaded(HashMap<String, Product> inventoryMap) {
-
-
                 inventoryList.clear();
-
-                // THE FIX: Loop through both the Key (Folder Name) and Value (Product Data)
                 for(java.util.Map.Entry<String, Product> entry : inventoryMap.entrySet()){
                     Product p = entry.getValue();
                     String nodeKey = entry.getKey();
-
-                    // If the product forgot its own barcode, force the folder name into it!
                     if (p.getBarcode() == null || p.getBarcode().trim().isEmpty() || p.getBarcode().equals("null")) {
                         p.setBarcode(nodeKey);
                     }
-
-                    // Now it is guaranteed to be valid. Add it to the visual list.
                     inventoryList.add(p);
                 }
                 applyCurrentFilters();
@@ -406,42 +420,6 @@ public class InventoryActivity extends AppCompatActivity {
         options.setOrientationLocked(true);
         options.setCaptureActivity(PortraitCaptureActivity.class);
         inventoryBarcodeLauncher.launch(options);
-    }
-
-    private void showAdminMenu() {
-        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
-        View sheet = getLayoutInflater().inflate(R.layout.layout_bottom_sheet, null);
-
-        Button btnHistory = sheet.findViewById(R.id.btnMenuHistory);
-        Button btnUtang = sheet.findViewById(R.id.btnMenuUtang);
-        Button btnInventory = sheet.findViewById(R.id.btnMenuInventory);
-        Button btnGcash = sheet.findViewById(R.id.btnMenuGcash);
-        Button btnAdmin = sheet.findViewById(R.id.btnMenuAdmin);
-        Button btnCheckout = sheet.findViewById(R.id.btnMenuCheckout);
-
-        android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
-        boolean isAdmin = prefs.getBoolean("IsAdmin", false);
-
-        if (!isAdmin) {
-            btnInventory.setVisibility(View.GONE);
-            btnGcash.setVisibility(View.GONE);
-            btnAdmin.setVisibility(View.GONE);
-        }
-
-        btnCheckout.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, MainActivity.class)); finish(); });
-        btnHistory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, HistoryActivity.class)); finish(); });
-        btnUtang.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, UtangActivity.class)); finish(); });
-
-        if (isAdmin) {
-            btnInventory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, InventoryActivity.class)); finish(); });
-            btnGcash.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, GCashActivity.class)); finish(); });
-            btnAdmin.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, DashboardActivity.class)); });
-        }
-
-        dialog.setContentView(sheet);
-        com.google.android.material.bottomsheet.BottomSheetBehavior behavior = dialog.getBehavior();
-        behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
-        dialog.show();
     }
 
     private void applyCurrentFilters() {

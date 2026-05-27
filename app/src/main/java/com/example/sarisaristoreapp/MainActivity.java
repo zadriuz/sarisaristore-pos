@@ -18,15 +18,21 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.sarisaristoreapp.models.Product;
+import com.google.android.material.navigation.NavigationView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
     private long backPressedTime;
+
+    // NEW: The Drawer Variable
+    private DrawerLayout drawerLayout;
 
     @Override
     public void onUserInteraction() {
@@ -55,7 +61,6 @@ public class MainActivity extends AppCompatActivity {
     Spinner spinnerPurse;
     TextView tvTotal, tvChange;
     ImageView btnMenu;
-    Button btnMenuCheckout;
 
     DatabaseHelper dbHelper;
     public static ArrayList<Product> checkoutCart = new ArrayList<>();
@@ -77,7 +82,6 @@ public class MainActivity extends AppCompatActivity {
                     if(globalInventory.containsKey(scannedCode)){
                         Product foundProduct = globalInventory.get(scannedCode);
 
-                        // --- THE CUMULATIVE SCANNER CHECK ---
                         int currentCartQty = 0;
                         Product existingCartItem = null;
 
@@ -104,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
                         cartAdapter.notifyDataSetChanged();
                         recalculateGrandTotal();
                     }else{
-                        // THE KANTO ALERT INTERCEPTOR
                         showItemNotFoundDialog(scannedCode);
                     }
                 }
@@ -115,7 +118,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // THE DOUBLE-TAP BACK BUTTON TRAPDOOR
         getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -155,8 +157,59 @@ public class MainActivity extends AppCompatActivity {
         activeCashier = prefs.getString("ActiveUser", "Unknown");
         isAdmin = prefs.getBoolean("IsAdmin", false);
 
-        ImageView btnInfo = findViewById(R.id.btnInfo);
+        // --- THE NEW DRAWER ENGINE ---
+        drawerLayout = findViewById(R.id.drawer_layout);
+        NavigationView navView = findViewById(R.id.nav_view);
 
+        navView.setCheckedItem(R.id.nav_checkout);
+        // Grab the Header View from the Drawer to inject dynamic data
+        View headerView = navView.getHeaderView(0);
+        TextView tvHeaderRole = headerView.findViewById(R.id.tvHeaderRole);
+
+        if (isAdmin) {
+            tvHeaderRole.setText(activeCashier + " / Admin");
+        } else {
+            tvHeaderRole.setText(activeCashier + " / Cashier");
+        }
+
+        // The Bouncer: Hide Admin features if the user is just a cashier
+        android.view.Menu navMenu = navView.getMenu();
+        if (!isAdmin) {
+            navMenu.findItem(R.id.nav_inventory).setVisible(false);
+            navMenu.findItem(R.id.nav_gcash).setVisible(false);
+            navMenu.findItem(R.id.nav_dashboard).setVisible(false);
+        }
+
+        // The Router: Handle sidebar clicks
+        navView.setNavigationItemSelectedListener(item -> {
+            int id = item.getItemId();
+
+            if (id == R.id.nav_checkout) {
+                drawerLayout.closeDrawer(GravityCompat.START);
+            } else if (id == R.id.nav_history) {
+                startActivity(new Intent(MainActivity.this, HistoryActivity.class));
+                finish();
+            } else if (id == R.id.nav_utang) {
+                startActivity(new Intent(MainActivity.this, UtangActivity.class));
+                finish();
+            } else if (id == R.id.nav_inventory) {
+                startActivity(new Intent(MainActivity.this, InventoryActivity.class));
+                finish();
+            } else if (id == R.id.nav_gcash) {
+                startActivity(new Intent(MainActivity.this, GCashActivity.class));
+                finish();
+            } else if (id == R.id.nav_dashboard) {
+                startActivity(new Intent(MainActivity.this, DashboardActivity.class));
+            } else if (id == R.id.nav_logout) {
+                drawerLayout.closeDrawer(GravityCompat.START);
+                performLogout();
+            }
+
+            drawerLayout.closeDrawer(GravityCompat.START);
+            return true;
+        });
+
+        ImageView btnInfo = findViewById(R.id.btnInfo);
         if (btnInfo != null) {
             btnInfo.setOnClickListener(v -> {
                 android.app.Dialog infoDialog = new android.app.Dialog(this);
@@ -172,7 +225,6 @@ public class MainActivity extends AppCompatActivity {
                 tvMessage.setText("This is the main checkout screen. Scan barcodes, adjust quantities, select payment methods (Cash, GCash, or Utang), and process customer orders.");
 
                 btnGotIt.setOnClickListener(view -> infoDialog.dismiss());
-
                 infoDialog.show();
             });
         }
@@ -190,6 +242,13 @@ public class MainActivity extends AppCompatActivity {
         tvChange = findViewById(R.id.tvChange);
 
         btnMenu = findViewById(R.id.btnMenu);
+
+        // --- DRAWER TRIGGER ---
+        btnMenu.setOnClickListener(v -> {
+            if (!drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
 
         AutoCompleteTextView etSmartSearch = findViewById(R.id.etBarcode);
         searchAdapter = new ContainsArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, searchList);
@@ -218,8 +277,6 @@ public class MainActivity extends AppCompatActivity {
 
         recalculateGrandTotal();
         cartAdapter.notifyDataSetChanged();
-
-        btnMenu.setOnClickListener(v -> showAdminMenu());
 
         etCashRendered.addTextChangedListener(new android.text.TextWatcher() {
             @Override
@@ -305,7 +362,6 @@ public class MainActivity extends AppCompatActivity {
                 etBarcode.setText("");
                 etQty.setText("");
             } else {
-                // THE KANTO ALERT INTERCEPTOR
                 showItemNotFoundDialog(targetBarcode);
             }
         });
@@ -435,7 +491,6 @@ public class MainActivity extends AppCompatActivity {
                 searchList.add(p.getProductName() + " | " + p.getBarcode());
             }
 
-            // THE FIX: Use the custom updateData method so the filter arrays refresh!
             if (searchAdapter != null) {
                 searchAdapter.updateData(searchList);
             }
@@ -471,45 +526,6 @@ public class MainActivity extends AppCompatActivity {
         etCashRendered.setText(etCashRendered.getText().toString());
     }
 
-    private void showAdminMenu() {
-        com.google.android.material.bottomsheet.BottomSheetDialog dialog = new com.google.android.material.bottomsheet.BottomSheetDialog(this);
-        View sheet = getLayoutInflater().inflate(R.layout.layout_bottom_sheet, null);
-
-        Button btnHistory = sheet.findViewById(R.id.btnMenuHistory);
-        Button btnUtang = sheet.findViewById(R.id.btnMenuUtang);
-        Button btnInventory = sheet.findViewById(R.id.btnMenuInventory);
-        Button btnGcash = sheet.findViewById(R.id.btnMenuGcash);
-        Button btnAdmin = sheet.findViewById(R.id.btnMenuAdmin);
-        Button btnCheckout = sheet.findViewById(R.id.btnMenuCheckout);
-
-        android.content.SharedPreferences prefs = getSharedPreferences("StoreSession", MODE_PRIVATE);
-        boolean isAdmin = prefs.getBoolean("IsAdmin", false);
-
-        if (!isAdmin) {
-            btnInventory.setVisibility(View.GONE);
-            btnGcash.setVisibility(View.GONE);
-            btnAdmin.setVisibility(View.GONE);
-        }
-
-        btnCheckout.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, MainActivity.class)); finish(); });
-        btnHistory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, HistoryActivity.class)); finish(); });
-        btnUtang.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, UtangActivity.class)); finish(); });
-
-        if (isAdmin) {
-            btnInventory.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, InventoryActivity.class)); finish(); });
-            btnGcash.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, GCashActivity.class)); finish(); });
-            btnAdmin.setOnClickListener(v -> { dialog.dismiss(); startActivity(new Intent(this, DashboardActivity.class)); });
-        }
-
-        dialog.setContentView(sheet);
-        com.google.android.material.bottomsheet.BottomSheetBehavior behavior = dialog.getBehavior();
-        behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
-        dialog.show();
-    }
-
-    // THE KANTO ALERT ENGINE
-    // THE KANTO ALERT ENGINE (FIXED TELEPORTER & TEXT)
-    // Notice we added "String missingBarcode" inside the parentheses!
     private void showItemNotFoundDialog(String missingBarcode) {
         android.app.Dialog dialog = new android.app.Dialog(this);
         View sheetView = getLayoutInflater().inflate(R.layout.layout_kanto_alert, null);
@@ -534,7 +550,6 @@ public class MainActivity extends AppCompatActivity {
         btnCheckInventory.setOnClickListener(v -> {
             dialog.dismiss();
             Intent intent = new Intent(MainActivity.this, InventoryActivity.class);
-            // THE FIX: Pack the EXACT missing barcode, not the global variable!
             intent.putExtra("NEW_BARCODE", missingBarcode);
             startActivity(intent);
             finish();
