@@ -31,7 +31,6 @@ import java.util.HashMap;
 public class MainActivity extends AppCompatActivity {
     private long backPressedTime;
 
-    // NEW: The Drawer Variable
     private DrawerLayout drawerLayout;
 
     @Override
@@ -56,8 +55,8 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<String> searchList = new ArrayList<>();
     ContainsArrayAdapter searchAdapter;
 
-    Button btnAddItem, btnCheckout;
-    EditText etBarcode, etQty, etCashRendered;
+    Button btnCheckout;
+    EditText etBarcode, etCashRendered;
     Spinner spinnerPurse;
     TextView tvTotal, tvChange;
     ImageView btnMenu;
@@ -72,7 +71,6 @@ public class MainActivity extends AppCompatActivity {
     String activeCashier;
     boolean isAdmin;
 
-    // THE CATCHER'S MITT
     private final androidx.activity.result.ActivityResultLauncher<com.journeyapps.barcodescanner.ScanOptions> barcodeLauncher =
             registerForActivityResult(new com.journeyapps.barcodescanner.ScanContract(), result -> {
                 if(result.getContents() == null) {
@@ -157,12 +155,10 @@ public class MainActivity extends AppCompatActivity {
         activeCashier = prefs.getString("ActiveUser", "Unknown");
         isAdmin = prefs.getBoolean("IsAdmin", false);
 
-        // --- THE NEW DRAWER ENGINE ---
         drawerLayout = findViewById(R.id.drawer_layout);
         NavigationView navView = findViewById(R.id.nav_view);
 
         navView.setCheckedItem(R.id.nav_checkout);
-        // Grab the Header View from the Drawer to inject dynamic data
         View headerView = navView.getHeaderView(0);
         TextView tvHeaderRole = headerView.findViewById(R.id.tvHeaderRole);
 
@@ -172,7 +168,6 @@ public class MainActivity extends AppCompatActivity {
             tvHeaderRole.setText(activeCashier + " / Cashier");
         }
 
-        // The Bouncer: Hide Admin features if the user is just a cashier
         android.view.Menu navMenu = navView.getMenu();
         if (!isAdmin) {
             navMenu.findItem(R.id.nav_inventory).setVisible(false);
@@ -180,7 +175,6 @@ public class MainActivity extends AppCompatActivity {
             navMenu.findItem(R.id.nav_dashboard).setVisible(false);
         }
 
-        // The Router: Handle sidebar clicks
         navView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
 
@@ -222,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
                 android.widget.TextView tvMessage = infoDialog.findViewById(R.id.tvInfoMessage);
                 android.widget.Button btnGotIt = infoDialog.findViewById(R.id.btnInfoGotIt);
 
-                tvMessage.setText("This is the main checkout screen. Scan barcodes, adjust quantities, select payment methods (Cash, GCash, or Utang), and process customer orders.");
+                tvMessage.setText("This is the main checkout screen. Scan barcodes, select payment methods, and process customer orders.");
 
                 btnGotIt.setOnClickListener(view -> infoDialog.dismiss());
                 infoDialog.show();
@@ -231,10 +225,8 @@ public class MainActivity extends AppCompatActivity {
 
         dbHelper = new DatabaseHelper(this);
 
-        btnAddItem = findViewById(R.id.btnAddItem);
         listCart = findViewById(R.id.ListCart);
         etBarcode = findViewById(R.id.etBarcode);
-        etQty = findViewById(R.id.etQty);
         spinnerPurse = findViewById(R.id.spinnerPurse);
         tvTotal = findViewById(R.id.tvTotal);
         btnCheckout = findViewById(R.id.btnCheckout);
@@ -243,7 +235,6 @@ public class MainActivity extends AppCompatActivity {
 
         btnMenu = findViewById(R.id.btnMenu);
 
-        // --- DRAWER TRIGGER ---
         btnMenu.setOnClickListener(v -> {
             if (!drawerLayout.isDrawerOpen(GravityCompat.START)) {
                 drawerLayout.openDrawer(GravityCompat.START);
@@ -253,6 +244,49 @@ public class MainActivity extends AppCompatActivity {
         AutoCompleteTextView etSmartSearch = findViewById(R.id.etBarcode);
         searchAdapter = new ContainsArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, searchList);
         etSmartSearch.setAdapter(searchAdapter);
+
+        // --- THE INSTANT AUTO-ADD ENGINE ---
+        etSmartSearch.setOnItemClickListener((parent, view, position, id) -> {
+            String input = (String) parent.getItemAtPosition(position);
+            String targetBarcode = input;
+            if(input.contains(" | ")){
+                targetBarcode = input.split(" \\| ")[1];
+            }
+
+            if(globalInventory.containsKey(targetBarcode)){
+                Product foundProduct = globalInventory.get(targetBarcode);
+
+                int currentCartQty = 0;
+                Product existingCartItem = null;
+
+                for (Product p : checkoutCart) {
+                    if (p.getBarcode().equals(foundProduct.getBarcode())) {
+                        existingCartItem = p;
+                        currentCartQty = p.getCurrentQuantity();
+                        break;
+                    }
+                }
+
+                if (currentCartQty + 1 > foundProduct.getCurrentQuantity()) {
+                    Toast.makeText(MainActivity.this, "Max stock reached!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (existingCartItem != null) {
+                    existingCartItem.setCurrentQuantity(currentCartQty + 1);
+                } else {
+                    Product receiptItem = new Product(0, 1, foundProduct.getCostPrice(), foundProduct.getSellingPrice(), foundProduct.getBarcode(), foundProduct.getProductName(), foundProduct.getCategory());
+                    checkoutCart.add(receiptItem);
+                }
+
+                recalculateGrandTotal();
+                cartAdapter.notifyDataSetChanged();
+
+                // Clear the chamber and snap focus back instantly
+                etBarcode.setText("");
+                etBarcode.requestFocus();
+            }
+        });
 
         String[] purses = {"Tindahan", "Softdrinks", "Print"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.item_spinner, purses);
@@ -307,63 +341,6 @@ public class MainActivity extends AppCompatActivity {
             options.setOrientationLocked(true);
             options.setCaptureActivity(PortraitCaptureActivity.class);
             barcodeLauncher.launch(options);
-        });
-
-        btnAddItem.setOnClickListener(v -> {
-            String input = etBarcode.getText().toString();
-            String scannedQty = etQty.getText().toString();
-
-            if(input.isEmpty() || scannedQty.isEmpty()){
-                Toast.makeText(MainActivity.this, "Please enter item and quantity!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            String targetBarcode = input;
-            if(input.contains(" | ")){
-                targetBarcode = input.split(" \\| ")[1];
-            }
-
-            if(globalInventory.containsKey(targetBarcode)){
-                Product foundProduct = globalInventory.get(targetBarcode);
-                int parsedQty = Integer.parseInt(scannedQty);
-
-                if (parsedQty <= 0) {
-                    Toast.makeText(MainActivity.this, "Quantity must be at least 1!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                int currentCartQty = 0;
-                Product existingCartItem = null;
-
-                for (Product p : checkoutCart) {
-                    if (p.getBarcode().equals(foundProduct.getBarcode())) {
-                        existingCartItem = p;
-                        currentCartQty = p.getCurrentQuantity();
-                        break;
-                    }
-                }
-
-                if (currentCartQty + parsedQty > foundProduct.getCurrentQuantity()) {
-                    int remainingAllowed = foundProduct.getCurrentQuantity() - currentCartQty;
-                    Toast.makeText(MainActivity.this, "Not enough stock! You can only add " + remainingAllowed + " more.", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                if (existingCartItem != null) {
-                    existingCartItem.setCurrentQuantity(currentCartQty + parsedQty);
-                } else {
-                    Product receiptItem = new Product(0, parsedQty, foundProduct.getCostPrice(), foundProduct.getSellingPrice(), foundProduct.getBarcode(), foundProduct.getProductName(), foundProduct.getCategory());
-                    checkoutCart.add(receiptItem);
-                }
-
-                recalculateGrandTotal();
-                cartAdapter.notifyDataSetChanged();
-
-                etBarcode.setText("");
-                etQty.setText("");
-            } else {
-                showItemNotFoundDialog(targetBarcode);
-            }
         });
 
         btnCheckout.setOnClickListener(v -> {

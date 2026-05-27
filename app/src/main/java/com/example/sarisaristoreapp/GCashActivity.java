@@ -15,8 +15,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.example.sarisaristoreapp.models.Product;
+import com.google.android.material.navigation.NavigationView;
 
 import java.util.ArrayList;
 
@@ -52,9 +55,8 @@ public class GCashActivity extends AppCompatActivity {
         getWindow().setStatusBarColor(getResources().getColor(R.color.kanto_primary));
         dbHelper = new DatabaseHelper(this);
 
-        // --- DRAWER ENGINE START ---
-        androidx.drawerlayout.widget.DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
-        com.google.android.material.navigation.NavigationView navView = findViewById(R.id.nav_view);
+        DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
+        NavigationView navView = findViewById(R.id.nav_view);
 
         navView.setCheckedItem(R.id.nav_gcash);
 
@@ -62,8 +64,8 @@ public class GCashActivity extends AppCompatActivity {
         String activeCashier = prefs.getString("ActiveUser", "Unknown");
         boolean isAdmin = prefs.getBoolean("IsAdmin", false);
 
-        android.view.View headerView = navView.getHeaderView(0);
-        android.widget.TextView tvHeaderRole = headerView.findViewById(R.id.tvHeaderRole);
+        View headerView = navView.getHeaderView(0);
+        TextView tvHeaderRole = headerView.findViewById(R.id.tvHeaderRole);
         tvHeaderRole.setText(isAdmin ? activeCashier + " / Admin" : activeCashier + " / Cashier");
 
         android.view.Menu navMenu = navView.getMenu();
@@ -85,7 +87,7 @@ public class GCashActivity extends AppCompatActivity {
             } else if (id == R.id.nav_inventory) {
                 startActivity(new Intent(this, InventoryActivity.class)); finish();
             } else if (id == R.id.nav_gcash) {
-                drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
+                drawerLayout.closeDrawer(GravityCompat.START);
             } else if (id == R.id.nav_dashboard) {
                 startActivity(new Intent(this, DashboardActivity.class)); finish();
             } else if (id == R.id.nav_logout) {
@@ -93,19 +95,18 @@ public class GCashActivity extends AppCompatActivity {
                 Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, LoginActivity.class)); finish();
             }
-            drawerLayout.closeDrawer(androidx.core.view.GravityCompat.START);
+            drawerLayout.closeDrawer(GravityCompat.START);
             return true;
         });
 
         ImageView btnMenu = findViewById(R.id.btnMenu);
         if (btnMenu != null) {
             btnMenu.setOnClickListener(v -> {
-                if (!drawerLayout.isDrawerOpen(androidx.core.view.GravityCompat.START)) {
-                    drawerLayout.openDrawer(androidx.core.view.GravityCompat.START);
+                if (!drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.openDrawer(GravityCompat.START);
                 }
             });
         }
-        // --- DRAWER ENGINE END ---
 
         ImageView btnInfo = findViewById(R.id.btnInfo);
         if (btnInfo != null) {
@@ -214,9 +215,9 @@ public class GCashActivity extends AppCompatActivity {
 
             if (remainder > 0 && remainder <= 499) {
                 remainderFee = 5.0;
-            } else if (remainder >= 500 && remainder <= 599) {
+            } else if (remainder > 499 && remainder <= 500) {
                 remainderFee = 10.0;
-            } else if (remainder >= 600 && remainder <= 999) {
+            } else if (remainder > 500 && remainder <= 999) {
                 remainderFee = 15.0;
             }
             calculatedFee = thousandsFee + remainderFee;

@@ -107,7 +107,6 @@ public class DatabaseHelper {
                         if ("UTANG_PAYMENT".equals(p.getBarcode())) {
                             itemList.add(p.getProductName());
                         } else if ("GCASH".equals(p.getBarcode())) {
-                            // THE GCASH HISTORY FIX: Pulls Category for Type, formats correctly.
                             String itemLine = "GCash " + p.getCategory() + " | " + p.getProductName() + " | Total: ₱" + String.format("%.2f", p.getSellingPrice());
                             itemList.add(itemLine);
                         } else {
@@ -138,10 +137,7 @@ public class DatabaseHelper {
         mDatabase.child("Inventory").child(barcode).removeValue();
     }
 
-    // 2. The Asynchronous Cloud Listener (NOW BULLETPROOF FOR OFFLINE)
     public void getAllProducts(final InventoryStatus status) {
-        // THE FIX: Changed to addValueEventListener. This instantly pulls from the local
-        // hard drive cache on a cold start instead of hanging while waiting for the internet.
         mDatabase.child("Inventory").addValueEventListener(new com.google.firebase.database.ValueEventListener() {
             @Override
             public void onDataChange(com.google.firebase.database.DataSnapshot snapshot) {
@@ -424,5 +420,11 @@ public class DatabaseHelper {
                 extractReceipts(child, totalRevenue, dailySales);
             }
         }
+    }
+
+    // THE VOID ENGINE
+    public void deleteTransaction(String transactionId) {
+        mDatabase.child("Transactions").child(transactionId).removeValue();
+        mDatabase.child("TransactionItems").child(transactionId).removeValue();
     }
 }

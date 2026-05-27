@@ -46,7 +46,6 @@ public class HistoryActivity extends AppCompatActivity {
         getWindow().setStatusBarColor(getResources().getColor(R.color.kanto_primary));
         dbHelper = new DatabaseHelper(this);
 
-        // --- DRAWER ENGINE START ---
         androidx.drawerlayout.widget.DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
         com.google.android.material.navigation.NavigationView navView = findViewById(R.id.nav_view);
 
@@ -99,7 +98,6 @@ public class HistoryActivity extends AppCompatActivity {
                 }
             });
         }
-        // --- DRAWER ENGINE END ---
 
         listHistory = findViewById(R.id.listHistory);
         tvTotalSales = findViewById(R.id.tvTotalSales);
@@ -185,6 +183,7 @@ public class HistoryActivity extends AppCompatActivity {
                 TextView tvTotal = sheetView.findViewById(R.id.tvReceiptTotal);
                 TextView tvTotalLabel = sheetView.findViewById(R.id.tvReceiptTotalLabel);
                 ImageView btnClose = sheetView.findViewById(R.id.btnCloseReceipt);
+                Button btnVoid = sheetView.findViewById(R.id.btnVoidTransaction);
 
                 tvDate.setText(receiptDate.replace(" ", "\n"));
                 tvItems.setText(receiptMessage.toString().trim());
@@ -198,6 +197,46 @@ public class HistoryActivity extends AppCompatActivity {
                 }
 
                 btnClose.setOnClickListener(v -> receiptDialog.dismiss());
+
+                if (isAdmin) {
+                    btnVoid.setVisibility(View.VISIBLE);
+                    btnVoid.setOnClickListener(vVoid -> {
+                        android.app.Dialog customVoidDialog = new android.app.Dialog(HistoryActivity.this);
+                        customVoidDialog.setContentView(R.layout.layout_alert_dialog);
+                        if (customVoidDialog.getWindow() != null) {
+                            customVoidDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                        }
+
+                        TextView tvTitle = customVoidDialog.findViewById(R.id.tvAlertTitle);
+                        TextView tvMessage = customVoidDialog.findViewById(R.id.tvAlertMessage);
+                        Button btnCancel = customVoidDialog.findViewById(R.id.btnAlertCancel);
+                        Button btnConfirm = customVoidDialog.findViewById(R.id.btnAlertConfirm);
+
+                        tvTitle.setText("Void Transaction");
+                        tvMessage.setText("Are you sure you want to void this transaction? This action cannot be undone.");
+                        btnConfirm.setText("Void");
+
+                        btnCancel.setOnClickListener(viewCancel -> customVoidDialog.dismiss());
+
+                        btnConfirm.setOnClickListener(viewConfirm -> {
+                            dbHelper.deleteTransaction(targetReceiptId);
+                            Toast.makeText(HistoryActivity.this, "Transaction Voided", Toast.LENGTH_SHORT).show();
+                            customVoidDialog.dismiss();
+                            receiptDialog.dismiss();
+
+                            dbHelper.getAllTransactions(updatedList -> {
+                                masterRecords.clear();
+                                masterRecords.addAll(updatedList);
+                                applyMasterFilter();
+                            });
+                        });
+
+                        customVoidDialog.show();
+                    });
+                } else {
+                    btnVoid.setVisibility(View.GONE);
+                }
+
                 receiptDialog.setContentView(sheetView);
                 if (receiptDialog.getWindow() != null) receiptDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
                 receiptDialog.show();

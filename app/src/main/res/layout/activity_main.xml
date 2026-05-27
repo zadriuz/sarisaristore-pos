@@ -8,7 +8,6 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <!-- CHILD 1: YOUR MAIN SCREEN -->
     <RelativeLayout
         android:id="@+id/main"
         android:layout_width="match_parent"
@@ -76,21 +75,6 @@
                 android:textColor="@color/kanto_text_body"
                 android:textColorHint="@color/kanto_neutral" />
 
-            <EditText
-                android:textCursorDrawable="@null"
-                android:id="@+id/etQty"
-                android:layout_width="70dp"
-                android:layout_height="50dp"
-                android:layout_marginStart="8dp"
-                android:background="@drawable/bg_input_focused"
-                android:hint="Qty"
-                android:inputType="number"
-                android:maxLength="2"
-                android:padding="12dp"
-                android:textAlignment="center"
-                android:textColor="@color/kanto_text_body"
-                android:textColorHint="@color/kanto_neutral" />
-
             <ImageButton
                 android:id="@+id/btnScanBarcode"
                 android:layout_width="48dp"
@@ -101,21 +85,6 @@
                 app:backgroundTint="@color/kanto_primary"
                 app:tint="@color/white" />
         </LinearLayout>
-
-        <Button
-            android:id="@+id/btnAddItem"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/layoutSearch"
-            android:layout_marginHorizontal="20dp"
-            android:background="@drawable/bg_rounded_button"
-            android:text="Add Item"
-            android:textColor="@color/kanto_text_head"
-            android:textStyle="bold"
-            app:backgroundTint="@color/kanto_yellow"
-            app:icon="@drawable/ic_add"
-            app:iconGravity="textStart"
-            app:iconTint="@color/kanto_text_head" />
 
         <LinearLayout
             android:id="@+id/layoutCheckout"
@@ -292,7 +261,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_above="@id/layoutCheckout"
-            android:layout_below="@id/btnAddItem"
+            android:layout_below="@id/layoutSearch"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
             android:layout_marginHorizontal="20dp"
@@ -301,7 +270,6 @@
 
     </RelativeLayout>
 
-    <!-- CHILD 2: THE SIDEBAR MENU -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"
