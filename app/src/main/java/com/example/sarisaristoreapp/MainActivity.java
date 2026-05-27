@@ -92,7 +92,9 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         if (currentCartQty + 1 > foundProduct.getCurrentQuantity()) {
-                            Toast.makeText(MainActivity.this, "Max stock reached!", Toast.LENGTH_SHORT).show();
+                            showOutOfStockDialog(foundProduct.getBarcode());
+                            etBarcode.setText("");
+                            etBarcode.requestFocus();
                             return;
                         }
 
@@ -104,7 +106,10 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         cartAdapter.notifyDataSetChanged();
+                        listCart.scrollToPosition(checkoutCart.size() - 1);
                         recalculateGrandTotal();
+                        etBarcode.setText("");
+                        etBarcode.requestFocus();
                     }else{
                         showItemNotFoundDialog(scannedCode);
                     }
@@ -126,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
                     if (customDialog.getWindow() != null) {
                         customDialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
                     }
+
 
                     android.widget.TextView tvTitle = customDialog.findViewById(R.id.tvAlertTitle);
                     android.widget.TextView tvMessage = customDialog.findViewById(R.id.tvAlertMessage);
@@ -245,7 +251,6 @@ public class MainActivity extends AppCompatActivity {
         searchAdapter = new ContainsArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, searchList);
         etSmartSearch.setAdapter(searchAdapter);
 
-        // --- THE INSTANT AUTO-ADD ENGINE ---
         etSmartSearch.setOnItemClickListener((parent, view, position, id) -> {
             String input = (String) parent.getItemAtPosition(position);
             String targetBarcode = input;
@@ -268,7 +273,9 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (currentCartQty + 1 > foundProduct.getCurrentQuantity()) {
-                    Toast.makeText(MainActivity.this, "Max stock reached!", Toast.LENGTH_SHORT).show();
+                    showOutOfStockDialog(foundProduct.getBarcode());
+                    etBarcode.setText("");
+                    etBarcode.requestFocus();
                     return;
                 }
 
@@ -281,8 +288,8 @@ public class MainActivity extends AppCompatActivity {
 
                 recalculateGrandTotal();
                 cartAdapter.notifyDataSetChanged();
+                listCart.scrollToPosition(checkoutCart.size() - 1);
 
-                // Clear the chamber and snap focus back instantly
                 etBarcode.setText("");
                 etBarcode.requestFocus();
             }
@@ -528,6 +535,42 @@ public class MainActivity extends AppCompatActivity {
             dialog.dismiss();
             Intent intent = new Intent(MainActivity.this, InventoryActivity.class);
             intent.putExtra("NEW_BARCODE", missingBarcode);
+            startActivity(intent);
+            finish();
+        });
+
+        dialog.setContentView(sheetView);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+        dialog.show();
+    }
+
+    private void showOutOfStockDialog(String missingBarcode) {
+        android.app.Dialog dialog = new android.app.Dialog(this);
+        View sheetView = getLayoutInflater().inflate(R.layout.layout_kanto_alert, null);
+
+        ImageView imgIcon = sheetView.findViewById(R.id.imgAlertIcon);
+        TextView tvTitle = sheetView.findViewById(R.id.tvAlertTitle);
+        TextView tvMessage = sheetView.findViewById(R.id.tvAlertMessage);
+        Button btnCancel = sheetView.findViewById(R.id.btnAlertLeft);
+        Button btnUpdateStock = sheetView.findViewById(R.id.btnAlertRight);
+
+        imgIcon.setImageResource(R.drawable.ic_warning);
+        imgIcon.setColorFilter(android.graphics.Color.parseColor("#DC2626"));
+
+        tvTitle.setText("Out of Stock!");
+        tvMessage.setText("You cannot add more of this item. Do you want to update the stock in Inventory?");
+
+        btnCancel.setText("Cancel");
+        btnUpdateStock.setText("Update Stock");
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnUpdateStock.setOnClickListener(v -> {
+            dialog.dismiss();
+            Intent intent = new Intent(MainActivity.this, InventoryActivity.class);
+            intent.putExtra("UPDATE_BARCODE", missingBarcode);
             startActivity(intent);
             finish();
         });

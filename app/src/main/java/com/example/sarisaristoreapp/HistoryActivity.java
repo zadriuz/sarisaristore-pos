@@ -26,7 +26,7 @@ public class HistoryActivity extends AppCompatActivity {
     ArrayList<TransactionRecord> allRecords = new ArrayList<>();
     HistoryAdapter adapter;
 
-    TextView tvTotalSales;
+    TextView tvTotalSales, tvTotalProfit;
     TextView tvSalesLabel;
     Spinner spinnerDateFilter;
 
@@ -101,6 +101,7 @@ public class HistoryActivity extends AppCompatActivity {
 
         listHistory = findViewById(R.id.listHistory);
         tvTotalSales = findViewById(R.id.tvTotalSales);
+        tvTotalProfit = findViewById(R.id.tvTotalProfit);
         tvSalesLabel = findViewById(R.id.tvSalesLabel);
         spinnerDateFilter = findViewById(R.id.spinnerDateFilter);
 
@@ -219,16 +220,23 @@ public class HistoryActivity extends AppCompatActivity {
                         btnCancel.setOnClickListener(viewCancel -> customVoidDialog.dismiss());
 
                         btnConfirm.setOnClickListener(viewConfirm -> {
+                            // 1. Tell Firebase to incinerate the record in the background
                             dbHelper.deleteTransaction(targetReceiptId);
                             Toast.makeText(HistoryActivity.this, "Transaction Voided", Toast.LENGTH_SHORT).show();
                             customVoidDialog.dismiss();
                             receiptDialog.dismiss();
 
-                            dbHelper.getAllTransactions(updatedList -> {
-                                masterRecords.clear();
-                                masterRecords.addAll(updatedList);
-                                applyMasterFilter();
-                            });
+                            // 2. Instantly snipe it out of the local memory so we don't wait for the internet
+                            for (int i = 0; i < masterRecords.size(); i++) {
+                                if (masterRecords.get(i).getTransactionId() != null &&
+                                        masterRecords.get(i).getTransactionId().equals(targetReceiptId)) {
+                                    masterRecords.remove(i);
+                                    break;
+                                }
+                            }
+
+                            // 3. Force the screen to refresh instantly
+                            applyMasterFilter();
                         });
 
                         customVoidDialog.show();
@@ -255,6 +263,7 @@ public class HistoryActivity extends AppCompatActivity {
     private void applyMasterFilter() {
         allRecords.clear();
         double grandTotal = 0.0;
+        double grandProfit = 0.0;
 
         int dateIndex = spinnerDateFilter.getSelectedItemPosition();
         String selectedCategory = "All";
@@ -317,11 +326,13 @@ public class HistoryActivity extends AppCompatActivity {
                 allRecords.add(record);
                 if (!payMethod.contains("Utang") || selectedCategory.equals("Utang")) {
                     grandTotal += record.getTotalAmount();
+                    grandProfit += record.getTotalProfit();
                 }
             }
         }
 
         tvTotalSales.setText(String.format("₱%.2f", grandTotal));
+        tvTotalProfit.setText(String.format("₱%.2f", grandProfit));
         adapter.notifyDataSetChanged();
     }
 }

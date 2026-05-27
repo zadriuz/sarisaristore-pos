@@ -422,9 +422,23 @@ public class DatabaseHelper {
         }
     }
 
-    // THE VOID ENGINE
     public void deleteTransaction(String transactionId) {
-        mDatabase.child("Transactions").child(transactionId).removeValue();
-        mDatabase.child("TransactionItems").child(transactionId).removeValue();
+        mDatabase.child("TransactionItems").child(transactionId).addListenerForSingleValueEvent(new com.google.firebase.database.ValueEventListener() {
+            @Override
+            public void onDataChange(com.google.firebase.database.DataSnapshot snapshot) {
+                for (com.google.firebase.database.DataSnapshot itemNode : snapshot.getChildren()) {
+                    Product p = itemNode.getValue(Product.class);
+                    if (p != null && p.getBarcode() != null && !p.getBarcode().equals("GCASH") && !p.getBarcode().equals("UTANG_PAYMENT")) {
+                        mDatabase.child("Inventory").child(p.getBarcode()).child("currentQuantity")
+                                .setValue(com.google.firebase.database.ServerValue.increment(p.getCurrentQuantity()));
+                    }
+                }
+                mDatabase.child("Transactions").child(transactionId).removeValue();
+                mDatabase.child("TransactionItems").child(transactionId).removeValue();
+            }
+
+            @Override
+            public void onCancelled(com.google.firebase.database.DatabaseError error) { }
+        });
     }
 }

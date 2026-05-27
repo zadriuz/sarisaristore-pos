@@ -356,6 +356,9 @@ public class InventoryActivity extends AppCompatActivity {
         editDialog.setContentView(sheetView);
         editDialog.show();
 
+        etQty.requestFocus();
+        etQty.setSelection(etQty.getText().length());
+
         com.google.android.material.bottomsheet.BottomSheetBehavior behavior = editDialog.getBehavior();
         behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
     }
@@ -408,6 +411,20 @@ public class InventoryActivity extends AppCompatActivity {
                     inventoryList.add(p);
                 }
                 applyCurrentFilters();
+
+                // --- THE UPDATE TELEPORTER CATCHER ---
+                String updateBarcode = getIntent().getStringExtra("UPDATE_BARCODE");
+                if (updateBarcode != null && !updateBarcode.isEmpty()) {
+                    for (Product p : inventoryList) {
+                        if (updateBarcode.equals(p.getBarcode())) {
+                            openEditProductPanel(p);
+                            // Disarm the teleporter instantly
+                            getIntent().removeExtra("UPDATE_BARCODE");
+                            break;
+                        }
+                    }
+                }
+                // --- END CATCHER ---
             }
         });
     }

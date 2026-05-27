@@ -7,4 +7,9 @@
         <item name="colorControlActivated">@color/kanto_primary</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+
+    <style name="KantoDialogAnimation">
+        <item name="android:windowEnterAnimation">@anim/dialog_zoom_in</item>
+        <item name="android:windowExitAnimation">@anim/dialog_zoom_out</item>
+    </style>
 </resources>
